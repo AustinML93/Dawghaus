@@ -1,5 +1,5 @@
 /* DawgHaus service worker — offline-first shell, fresh data. */
-const CACHE = "dawghaus-v3";
+const CACHE = "dawghaus-v4";
 const SHELL = [
   "/",
   "/index.html",

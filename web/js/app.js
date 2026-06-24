@@ -256,8 +256,10 @@ function wireButtons() {
     }
   });
 
-  // Fight song
+  // Fight song (toggle play/stop, label reflects state)
   $("songBtn").addEventListener("click", () => FIGHTSONG.play());
+  document.addEventListener("fightsong:started", () => { $("songBtn").textContent = "⏹ Stop"; });
+  document.addEventListener("fightsong:stopped", () => { $("songBtn").textContent = "🎺 Fight Song"; });
 
   // Trash talk
   $("trashText").textContent = TRASH.ofTheDay();

@@ -2,35 +2,53 @@
  * If you drop a real recording at web/audio/fight-song.mp3 (Bow Down to
  * Washington is public domain, 1915), it plays that. Otherwise it synthesizes
  * a triumphant brass fanfare with Web Audio so the button always does something
- * — and it works offline. */
+ * — and it works offline.
+ *
+ * play() is a TOGGLE: press to start, press again to stop. It fires
+ * "fightsong:started" / "fightsong:stopped" on document so the UI can update
+ * the button label. */
 
 const FIGHTSONG = (() => {
-  let playing = null;
+  let audioEl = null;
+  let fanfareCtx = null;
 
-  function play() {
-    // Must start playback SYNCHRONOUSLY inside the click — any await first
-    // breaks the user-gesture requirement on iOS/Safari and the audio is
-    // silently blocked. So we try the real recording immediately and only
-    // fall back to the synth fanfare if it can't play (e.g. file missing).
-    stop();
-    const audio = new Audio("/audio/fight-song.mp3");
-    audio.preload = "auto";
-    audio.addEventListener("ended", () => { playing = null; });
-    playing = audio;
-    const p = audio.play();
-    if (p && p.catch) {
-      p.catch(() => { playing = null; fanfare(); });
-    }
+  function emit(name) { document.dispatchEvent(new CustomEvent(name)); }
+
+  function isPlaying() {
+    if (audioEl && !audioEl.paused && !audioEl.ended) return true;
+    if (fanfareCtx && fanfareCtx.state !== "closed") return true;
+    return false;
   }
 
   function stop() {
-    if (playing) { try { playing.pause(); } catch (_) {} playing = null; }
+    if (audioEl) { try { audioEl.pause(); } catch (_) {} audioEl = null; }
+    if (fanfareCtx) { try { fanfareCtx.close(); } catch (_) {} fanfareCtx = null; }
+    emit("fightsong:stopped");
+  }
+
+  function play() {
+    // Toggle off if something is already going.
+    if (isPlaying()) { stop(); return; }
+
+    // Start playback SYNCHRONOUSLY inside the click — any await first breaks the
+    // user-gesture requirement on iOS/Safari and the audio is silently blocked.
+    const audio = new Audio("/audio/fight-song.mp3");
+    audio.preload = "auto";
+    audio.addEventListener("playing", () => emit("fightsong:started"), { once: true });
+    audio.addEventListener("ended", () => { audioEl = null; emit("fightsong:stopped"); });
+    audioEl = audio;
+    const p = audio.play();
+    if (p && p.catch) {
+      p.catch(() => { audioEl = null; fanfare(); });  // no file / can't play -> synth
+    }
   }
 
   function fanfare() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const ctx = new AC();
+    fanfareCtx = ctx;
+    emit("fightsong:started");
     const t0 = ctx.currentTime + 0.04;
     const master = ctx.createGain();
     master.gain.value = 0.22;
@@ -60,11 +78,13 @@ const FIGHTSONG = (() => {
     tone(C5, 0.18, 0.18);
     tone(E5, 0.36, 0.18);
     tone(G5, 0.54, 0.34, 0.34);
-    // Triumphant final chord.
     [C5, E5, G5, C5 * 2].forEach((f) => tone(f, 1.0, 1.0, 0.22));
 
-    setTimeout(() => ctx.close(), 2400);
+    const totalMs = 2400;
+    setTimeout(() => {
+      if (fanfareCtx === ctx) { try { ctx.close(); } catch (_) {} fanfareCtx = null; emit("fightsong:stopped"); }
+    }, totalMs);
   }
 
-  return { play, stop };
+  return { play, stop, isPlaying };
 })();
