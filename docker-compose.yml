@@ -7,7 +7,9 @@ services:
       - "1889:80"            # 1889 = UW's first-ever football game. Point the CF tunnel here.
     volumes:
       - ./web:/usr/share/nginx/html:ro
-      - ./data:/usr/share/nginx/html/data:ro
+      # Data is served via an nginx alias (see nginx.conf) from OUTSIDE the web
+      # root, so we don't nest a mount inside the read-only ./web mount.
+      - ./data:/srv/dawghaus-data:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
   updater:
