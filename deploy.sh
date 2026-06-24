@@ -30,7 +30,10 @@ docker compose pull
 echo ""
 
 echo "[4/5] Recreating containers..."
-docker compose up -d
+# --force-recreate is required: nginx.conf is a single-file bind mount, and
+# git pull replaces the file (new inode), so a plain restart keeps serving the
+# OLD config. Recreating re-binds the mount to the current file.
+docker compose up -d --force-recreate
 echo ""
 
 echo "[5/5] Status:"
