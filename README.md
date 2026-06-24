@@ -16,6 +16,12 @@ Built to self-host on an OMV server in Docker and expose via a Cloudflare tunnel
 - 🌦️ Gameday weather for home games (auto-pulled within 7 days of kickoff).
 - 📣 Installable PWA + one-tap share so your buddies can add it to their home screens.
 - 😈 Full-degenerate snark engine, rotating daily.
+- 🗑️ Trash Talk of the Day + a "generate more disrespect" button (Oregon-weighted, naturally).
+- 🎺 Fight Song button — plays your own `web/audio/fight-song.mp3` if present (Bow Down to
+  Washington is public domain, 1915), else a synthesized brass fanfare. Works offline.
+- 🌗 Light/dark Husky themes (cream + purple + gold, or deep purple), saved per device.
+
+**Live:** https://github.com/AustinML93/Dawghaus · runs on OMV port **1889** (UW's first-ever game, 1889).
 
 ## Architecture
 
@@ -30,19 +36,37 @@ The seeded schedule means the app works immediately; ESPN fills in exact kickoff
 TV networks automatically as they're announced (which, per your note, won't be much until the
 season nears).
 
-## Run it
+## Run it locally
 
 ```bash
 docker compose up -d
 ```
 
-Then open `http://<server>:8080`. Point your Cloudflare tunnel at `localhost:8080`:
+Then open `http://<server>:1889`.
+
+## Deploy to OMV (standard pattern)
+
+Cloned at `/srv/dev-disk-by-uuid-5c291e74-2a76-4eb0-924b-7bf8f9eca72c/compose/dawghaus`
+on the OMV box (`deploy@192.168.1.200`). To ship updates:
+
+```bash
+ssh deploy@192.168.1.200
+cd /srv/dev-disk-by-uuid-.../compose/dawghaus
+./deploy.sh        # stashes local data changes, git pull, pull images, recreate
+```
+
+`deploy.sh` stashes the updater's local rewrites of `data/` before pulling, so it's safe to re-run.
+
+## Cloudflare tunnel
+
+OMV already runs a `cloudflared` container. Add a public hostname in the Cloudflare
+dashboard (Zero Trust → Tunnels → Public Hostnames) pointing at `http://localhost:1889`,
+or add to the tunnel config:
 
 ```yaml
-# cloudflared config.yml
 ingress:
   - hostname: dawghaus.example.com
-    service: http://localhost:8080
+    service: http://localhost:1889
   - service: http_status:404
 ```
 
