@@ -1,0 +1,8 @@
+.DS_Store
+data/weather.json
+data/schedule.json.tmp
+data/weather.json.tmp
+*.log
+
+# Fight song audio (user-supplied, possibly large/owned)
+web/audio/fight-song.mp3

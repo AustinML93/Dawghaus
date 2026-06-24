@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#4B2E83" />
+  <title>DawgHaus 🐺 — Husky Football Countdown</title>
+  <meta name="description" content="Days until Husky football. Forever Pac-12 Champions. Eat it, Oregon." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DawgHaus" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script>
+    // Apply saved theme before paint to avoid a flash.
+    try { var t = localStorage.getItem("dawghaus-theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+  </script>
+  <meta property="og:title" content="DawgHaus 🐺" />
+  <meta property="og:description" content="The official countdown to Husky football. Forever Pac-12 Champions." />
+  <meta property="og:type" content="website" />
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">🐺</span>
+      <span class="brand-name">Dawg<span class="accent">Haus</span></span>
+    </div>
+    <div class="topbar-actions">
+      <button id="songBtn" class="ghost-btn" title="Bow Down to Washington">🎺 Fight Song</button>
+      <button id="themeBtn" class="ghost-btn" title="Toggle light/dark" aria-label="Toggle theme">🌙</button>
+      <button id="installBtn" class="ghost-btn" hidden>⬇️ Install</button>
+      <button id="shareBtn" class="ghost-btn">📣 Send to a buddy</button>
+    </div>
+  </header>
+
+  <main>
+    <p id="snarkLine" class="snark-line">Loading the disrespect…</p>
+
+    <section class="countdowns" aria-label="Countdowns">
+      <article class="cd-card cd-husky" id="huskyCard">
+        <h2 class="cd-title">🐺 The Dawgs are back in</h2>
+        <div class="cd-number" id="huskyDays">—</div>
+        <div class="cd-unit">days</div>
+        <div class="cd-clock" id="huskyClock">--:--:--</div>
+        <div class="cd-sub" id="huskySub">Loading…</div>
+      </article>
+
+      <article class="cd-card cd-cfb" id="cfbCard">
+        <h2 class="cd-title">🏈 College football returns in</h2>
+        <div class="cd-number" id="cfbDays">—</div>
+        <div class="cd-unit">days</div>
+        <div class="cd-clock" id="cfbClock">--:--:--</div>
+        <div class="cd-sub" id="cfbSub">Loading…</div>
+      </article>
+    </section>
+
+    <section class="hype" aria-label="Hype meter">
+      <div class="hype-head">
+        <span>HYPE METER</span>
+        <span id="hypePct">0%</span>
+      </div>
+      <div class="hype-track"><div class="hype-fill" id="hypeFill"></div></div>
+      <p class="hype-cap" id="hypeCap">Calibrating hype…</p>
+    </section>
+
+    <section class="banner-row">
+      <div class="champ-banner" title="The Pac-12 is gone. We are the last champions. Forever.">
+        🏆 FOREVER PAC-12 CHAMPIONS 🏆
+        <small>2023 — the last one ever. Nobody can take it back.</small>
+      </div>
+    </section>
+
+    <section class="stat-row">
+      <div class="stat-card oregon-card">
+        <div class="stat-label">☠️ Days since we last beat Oregon</div>
+        <div class="stat-number" id="oregonDays">—</div>
+        <div class="stat-sub" id="oregonSub"></div>
+      </div>
+    </section>
+
+    <section class="trash" aria-label="Trash talk">
+      <div class="trash-card">
+        <div class="trash-head">🗑️ TRASH TALK OF THE DAY</div>
+        <p class="trash-text" id="trashText">Warming up the insults…</p>
+        <button id="trashBtn" class="trash-btn">🔥 Generate more disrespect</button>
+      </div>
+    </section>
+
+    <section class="schedule" aria-label="2026 schedule">
+      <h2 class="section-title">📅 The 2026 Slate</h2>
+      <div id="scheduleList" class="sched-list">
+        <p class="muted">Loading schedule…</p>
+      </div>
+      <p class="updated" id="updatedAt"></p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Built in the DawgHaus. Self-hosted, ad-free, Oregon-free.</p>
+    <p class="tiny">Go Dawgs. 🐺💜</p>
+  </footer>
+
+  <script src="/js/snark.js"></script>
+  <script src="/js/trashtalk.js"></script>
+  <script src="/js/fightsong.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

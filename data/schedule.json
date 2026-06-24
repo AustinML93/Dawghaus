@@ -1,0 +1,178 @@
+{
+  "season": 2026,
+  "team": {
+    "name": "Washington Huskies",
+    "espnId": 264
+  },
+  "updated": "2026-06-24T20:29:26.271214+00:00",
+  "oregon_last_win": "2023-12-01",
+  "pac12_champs": true,
+  "cfb_opener": {
+    "date": "2026-08-29T09:00:00-07:00",
+    "label": "Week 0 \u2014 incl. Oregon vs Boise State \ud83e\udd86",
+    "timeConfirmed": false
+  },
+  "games": [
+    {
+      "id": "wsu",
+      "opponent": "Washington State",
+      "abbr": "WSU",
+      "date": "2026-09-05",
+      "kickoff": "2026-09-05T12:30:00-07:00",
+      "home": true,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": "apple-cup",
+      "timeConfirmed": false
+    },
+    {
+      "id": "usu",
+      "opponent": "Utah State",
+      "abbr": "USU",
+      "date": "2026-09-12",
+      "kickoff": "2026-09-12T12:30:00-07:00",
+      "home": true,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "ewu",
+      "opponent": "Eastern Washington",
+      "abbr": "EWU",
+      "date": "2026-09-19",
+      "kickoff": "2026-09-19T12:30:00-07:00",
+      "home": true,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "minn",
+      "opponent": "Minnesota",
+      "abbr": "MINN",
+      "date": "2026-09-26",
+      "kickoff": "2026-09-26T12:30:00-07:00",
+      "home": true,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "usc",
+      "opponent": "USC",
+      "abbr": "USC",
+      "date": "2026-10-03",
+      "kickoff": "2026-10-03T12:30:00-07:00",
+      "home": false,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "iowa",
+      "opponent": "Iowa",
+      "abbr": "IOWA",
+      "date": "2026-10-10",
+      "kickoff": "2026-10-10T12:30:00-07:00",
+      "home": true,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "pur",
+      "opponent": "Purdue",
+      "abbr": "PUR",
+      "date": "2026-10-17",
+      "kickoff": "2026-10-17T12:30:00-07:00",
+      "home": false,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "bye1",
+      "bye": true,
+      "date": "2026-10-24"
+    },
+    {
+      "id": "neb",
+      "opponent": "Nebraska",
+      "abbr": "NEB",
+      "date": "2026-10-31",
+      "kickoff": "2026-10-31T12:30:00-07:00",
+      "home": false,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "psu",
+      "opponent": "Penn State",
+      "abbr": "PSU",
+      "date": "2026-11-07",
+      "kickoff": "2026-11-07T12:30:00-08:00",
+      "home": true,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "msu",
+      "opponent": "Michigan State",
+      "abbr": "MSU",
+      "date": "2026-11-14",
+      "kickoff": "2026-11-14T12:30:00-08:00",
+      "home": false,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "ind",
+      "opponent": "Indiana",
+      "abbr": "IND",
+      "date": "2026-11-21",
+      "kickoff": "2026-11-21T12:30:00-08:00",
+      "home": true,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": null,
+      "timeConfirmed": false
+    },
+    {
+      "id": "ore",
+      "opponent": "Oregon",
+      "abbr": "ORE",
+      "date": "2026-11-28",
+      "kickoff": "2026-11-28T12:30:00-08:00",
+      "home": false,
+      "neutral": false,
+      "tv": null,
+      "result": null,
+      "rivalry": "oregon",
+      "timeConfirmed": false
+    }
+  ]
+}
