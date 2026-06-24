@@ -7,19 +7,20 @@
 const FIGHTSONG = (() => {
   let playing = null;
 
-  async function play() {
-    // Prefer a real recording if the user supplied one.
-    try {
-      const r = await fetch("/audio/fight-song.mp3", { method: "HEAD" });
-      if (r.ok) {
-        stop();
-        playing = new Audio("/audio/fight-song.mp3");
-        await playing.play();
-        playing.addEventListener("ended", () => { playing = null; });
-        return;
-      }
-    } catch (_) { /* fall through to synth */ }
-    fanfare();
+  function play() {
+    // Must start playback SYNCHRONOUSLY inside the click — any await first
+    // breaks the user-gesture requirement on iOS/Safari and the audio is
+    // silently blocked. So we try the real recording immediately and only
+    // fall back to the synth fanfare if it can't play (e.g. file missing).
+    stop();
+    const audio = new Audio("/audio/fight-song.mp3");
+    audio.preload = "auto";
+    audio.addEventListener("ended", () => { playing = null; });
+    playing = audio;
+    const p = audio.play();
+    if (p && p.catch) {
+      p.catch(() => { playing = null; fanfare(); });
+    }
   }
 
   function stop() {

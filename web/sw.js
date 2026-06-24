@@ -1,5 +1,5 @@
 /* DawgHaus service worker — offline-first shell, fresh data. */
-const CACHE = "dawghaus-v2";
+const CACHE = "dawghaus-v3";
 const SHELL = [
   "/",
   "/index.html",
@@ -27,6 +27,10 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET") return;
+
+  // Audio: never intercept — let the browser stream it natively (range requests
+  // / 206 responses can't be cached and break audio playback through the SW).
+  if (url.pathname.startsWith("/audio/")) return;
 
   // Data: network-first, fall back to cache (so countdowns keep working offline).
   if (url.pathname.startsWith("/data/")) {
