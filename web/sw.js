@@ -1,13 +1,14 @@
 /* DawgHaus service worker — offline-first shell, fresh data. */
-const CACHE = "dawghaus-v4";
+const CACHE = "dawghaus-v5";
 const SHELL = [
   "/",
   "/index.html",
-  "/css/styles.css",
-  "/js/app.js",
-  "/js/snark.js",
-  "/js/trashtalk.js",
-  "/js/fightsong.js",
+  "/css/styles.css?v=5",
+  "/js/app.js?v=5",
+  "/js/snark.js?v=5",
+  "/js/trashtalk.js?v=5",
+  "/js/fightsong.js?v=5",
+  "/js/touchdown.js?v=5",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",

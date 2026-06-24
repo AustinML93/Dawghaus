@@ -261,6 +261,11 @@ function wireButtons() {
   document.addEventListener("fightsong:started", () => { $("songBtn").textContent = "⏹ Stop"; });
   document.addEventListener("fightsong:stopped", () => { $("songBtn").textContent = "🎺 Fight Song"; });
 
+  // Touchdown siren (floating button, toggle)
+  $("tdBtn").addEventListener("click", () => TOUCHDOWN.play());
+  document.addEventListener("touchdown:started", () => $("tdBtn").classList.add("is-blasting"));
+  document.addEventListener("touchdown:stopped", () => $("tdBtn").classList.remove("is-blasting"));
+
   // Trash talk
   $("trashText").textContent = TRASH.ofTheDay();
   $("trashBtn").addEventListener("click", () => {

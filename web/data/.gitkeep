@@ -1,2 +1,0 @@
-# Mountpoint for the ./data bind mount (docker mounts data/ here at runtime).
-# Required so nginx (read-only web mount) has the dir to mount onto.

@@ -4,5 +4,6 @@ data/schedule.json.tmp
 data/weather.json.tmp
 *.log
 
-# Fight song audio (user-supplied, possibly large/owned)
+# Audio (user-supplied, possibly large/owned)
 web/audio/fight-song.mp3
+web/audio/touchdown.mp3

@@ -181,6 +181,32 @@ main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding
 .updated { text-align: center; font-size: .72rem; color: var(--muted); margin-top: 14px; }
 .muted { color: var(--muted); }
 
+/* Touchdown siren — floating action button */
+.td-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 60;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-bright);
+  background: radial-gradient(circle at 32% 28%, #6a3fb0, var(--purple-deep));
+  color: #fff;
+  font-size: 1.85rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  transition: transform .1s ease;
+}
+.td-fab:hover { filter: brightness(1.1); }
+.td-fab:active { transform: scale(.9); }
+.td-fab.is-blasting { animation: siren 0.5s linear infinite; }
+@keyframes siren {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,80,80,.75), 0 8px 24px rgba(0,0,0,.5); border-color: #ff5a5a; transform: scale(1.05); }
+  50% { box-shadow: 0 0 0 14px rgba(255,80,80,0), 0 8px 24px rgba(0,0,0,.5); border-color: var(--gold-bright); transform: scale(1); }
+}
+
 /* Footer */
 .footer { text-align: center; padding: 24px 16px 40px; color: var(--muted); font-size: .85rem; }
 .footer .tiny { font-size: .8rem; opacity: .7; }
