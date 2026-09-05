@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="DawgHaus" />
   <link rel="icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/styles.css?v=6" />
+  <link rel="stylesheet" href="/css/styles.css?v=7" />
   <script>
     // Apply saved theme before paint to avoid a flash.
     try { var t = localStorage.getItem("dawghaus-theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}
@@ -50,17 +50,17 @@
       </article>
 
       <article class="cd-card cd-cfb" id="cfbCard">
-        <h2 class="cd-title">🏈 College football returns in</h2>
+        <h2 class="cd-title" id="cfbTitle">🏈 College football returns in</h2>
         <div class="cd-number" id="cfbDays">—</div>
-        <div class="cd-unit">days</div>
+        <div class="cd-unit" id="cfbUnit">days</div>
         <div class="cd-clock" id="cfbClock">--:--:--</div>
         <div class="cd-sub" id="cfbSub">Loading…</div>
       </article>
     </section>
 
-    <section class="hype" aria-label="Hype meter">
+    <section class="hype" aria-label="Hype meter" id="hypeCard">
       <div class="hype-head">
-        <span>HYPE METER</span>
+        <span id="hypeLabel">HYPE METER</span>
         <span id="hypePct">0%</span>
       </div>
       <div class="hype-track"><div class="hype-fill" id="hypeFill"></div></div>
@@ -79,6 +79,17 @@
         <div class="stat-label">☠️ Days since we last beat Oregon</div>
         <div class="stat-number" id="oregonDays">—</div>
         <div class="stat-sub" id="oregonSub"></div>
+      </div>
+    </section>
+
+    <section class="duckwatch" aria-label="Duck Watch">
+      <div class="duck-card">
+        <div class="duck-head">🦆 DUCK WATCH <span class="duck-rec" id="duckRecord"></span></div>
+        <p class="duck-loss" id="duckLoss">Scouting the enemy…</p>
+        <div class="duck-fact">
+          <span class="duck-fact-label">DUCK FACT OF THE DAY</span>
+          <p id="duckFact"></p>
+        </div>
       </div>
     </section>
 
@@ -106,10 +117,11 @@
 
   <button id="tdBtn" class="td-fab" title="Touchdown siren!" aria-label="Touchdown siren">🚨</button>
 
-  <script src="/js/snark.js?v=6"></script>
-  <script src="/js/trashtalk.js?v=6"></script>
-  <script src="/js/fightsong.js?v=6"></script>
-  <script src="/js/touchdown.js?v=6"></script>
-  <script src="/js/app.js?v=6"></script>
+  <script src="/js/snark.js?v=7"></script>
+  <script src="/js/trashtalk.js?v=7"></script>
+  <script src="/js/ducks.js?v=7"></script>
+  <script src="/js/fightsong.js?v=7"></script>
+  <script src="/js/touchdown.js?v=7"></script>
+  <script src="/js/app.js?v=7"></script>
 </body>
 </html>

@@ -19,11 +19,15 @@ from zoneinfo import ZoneInfo
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 SCHEDULE = os.path.join(DATA_DIR, "schedule.json")
 WEATHER = os.path.join(DATA_DIR, "weather.json")
+OREGON = os.path.join(DATA_DIR, "oregon.json")
 TEAM_ID = 264  # Washington Huskies
+OREGON_TEAM_ID = 2483  # Oregon Ducks — tracked for shade purposes
 INTERVAL = int(os.environ.get("UPDATE_INTERVAL", "1800"))
 LIVE_INTERVAL = int(os.environ.get("LIVE_INTERVAL", "120"))  # while a game is on
 ESPN = ("https://site.api.espn.com/apis/site/v2/sports/football/"
         f"college-football/teams/{TEAM_ID}/schedule")
+ESPN_OREGON = ("https://site.api.espn.com/apis/site/v2/sports/football/"
+               f"college-football/teams/{OREGON_TEAM_ID}/schedule")
 PT = ZoneInfo("America/Los_Angeles")
 ET = ZoneInfo("America/New_York")  # ESPN encodes "time TBD" as midnight Eastern
 # Home games are in Seattle (Husky Stadium). We only fetch weather for home games.
@@ -48,6 +52,24 @@ def norm(s):
     return "".join(c for c in (s or "").lower() if c.isalnum())
 
 
+def slugify(s):
+    return "-".join((s or "").lower().split())
+
+
+def compute_record(games):
+    """W-L derived from completed games' 'result' strings ('W 34-10' / 'L 10-34')."""
+    w = l = 0
+    for g in games:
+        r = g.get("result")
+        if not r:
+            continue
+        if r.startswith("W"):
+            w += 1
+        elif r.startswith("L"):
+            l += 1
+    return {"w": w, "l": l}
+
+
 def score_val(c):
     s = c.get("score")
     if isinstance(s, dict):
@@ -63,11 +85,33 @@ def parse_espn_date(s):
     return datetime.strptime(s, "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)
 
 
-def parse_event(ev):
-    """Pull the bits we care about from one ESPN event."""
+def get_rank(competitor):
+    """AP/curated rank off a competitor entry. ESPN uses 99 for 'unranked'."""
+    if not competitor:
+        return None
+    r = (competitor.get("curatedRank") or {}).get("current")
+    if r is None or r >= 99:
+        return None
+    return r
+
+
+def current_rank(events):
+    """ESPN stamps each event with the rank AT THAT TIME, so the opener would
+    freeze the preseason rank all year. Use the next unplayed game (which carries
+    the current poll), falling back to the most recent game."""
+    ordered = sorted(events, key=lambda e: (e["date"], e["kickoff"] or ""))
+    upcoming = [e for e in ordered if e.get("status") != "post"]
+    for e in (upcoming[:1] + ordered[::-1]):
+        if e.get("rank") is not None:
+            return e["rank"]
+    return None
+
+
+def parse_event(ev, team_id=TEAM_ID):
+    """Pull the bits we care about from one ESPN event, from team_id's POV."""
     comp = (ev.get("competitions") or [{}])[0]
     comps = comp.get("competitors") or []
-    us = next((c for c in comps if str(c.get("team", {}).get("id")) == str(TEAM_ID)), None)
+    us = next((c for c in comps if str(c.get("team", {}).get("id")) == str(team_id)), None)
     them = next((c for c in comps if c is not us), None)
     if not them or not ev.get("date"):
         return None
@@ -88,6 +132,11 @@ def parse_event(ev):
         "opponent_name": tt.get("displayName"),
         "opponent_keys": {norm(tt.get("location")), norm(tt.get("abbreviation")),
                           norm(tt.get("displayName")), norm(tt.get("shortDisplayName"))} - {""},
+        "opponent": tt.get("location"),
+        "abbr": tt.get("abbreviation"),
+        "home": (us.get("homeAway") == "home") if us else None,
+        "neutral": bool(comp.get("neutralSite", False)),
+        "rank": get_rank(us),
         "espnId": ev.get("id"),
         "date": day,
         "kickoff": kickoff,
@@ -183,6 +232,41 @@ def merge_schedule():
         if g.get("live") != ev["live"]:
             g["live"] = ev["live"]; changed = True
 
+    # Postseason: ESPN may add a bowl/CFP event that doesn't match any seed game.
+    # Append it (matched on espnId so we never duplicate across cycles).
+    known_ids = {g.get("espnId") for g in sched["games"] if g.get("espnId")}
+    for ev in events:
+        if ev["espnId"] in known_ids:
+            continue
+        gid = "bowl-" + (slugify(ev["opponent"]) or ev["espnId"] or "postseason")
+        log(f"  postseason game added: {gid} vs {ev['opponent_name']}")
+        sched["games"].append({
+            "id": gid,
+            "opponent": ev["opponent"],
+            "abbr": ev["abbr"],
+            "date": ev["date"],
+            "kickoff": ev["kickoff"],
+            "home": ev["home"],
+            "neutral": ev["neutral"],
+            "tv": ev["tv"],
+            "result": ev["result"],
+            "rivalry": None,
+            "timeConfirmed": ev["timeConfirmed"],
+            "status": ev["status"],
+            "espnId": ev["espnId"],
+            "postseason": True,
+        })
+        known_ids.add(ev["espnId"])
+        changed = True
+
+    # AP/curated rank and W-L record, surfaced at the top level for the UI.
+    rank = current_rank(events)
+    if sched.get("rank") != rank:
+        sched["rank"] = rank; changed = True
+    record = compute_record(sched["games"])
+    if sched.get("record") != record:
+        sched["record"] = record; changed = True
+
     sched.pop("sync_error", None)
     sched["updated"] = datetime.now(timezone.utc).isoformat()
     return sched, changed
@@ -237,6 +321,47 @@ def fetch_weather(sched):
     return out
 
 
+def fetch_oregon():
+    """Oregon's season, record, AP rank, and every loss — for maximum shade.
+    Non-fatal on failure: caller keeps the last good oregon.json."""
+    try:
+        data = fetch_json(ESPN_OREGON)
+    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        log("Oregon ESPN fetch failed (keeping last good data):", e)
+        return None
+
+    events = [parse_event(ev, team_id=OREGON_TEAM_ID) for ev in (data.get("events") or [])]
+    events = [e for e in events if e]
+    events.sort(key=lambda e: (e["date"], e["kickoff"] or ""))
+    log(f"ESPN returned {len(events)} Oregon events")
+
+    games = [{
+        "opponent": e["opponent"],
+        "abbr": e["abbr"],
+        "date": e["date"],
+        "kickoff": e["kickoff"],
+        "home": e["home"],
+        "status": e["status"],
+        "result": e["result"],
+        "live": e["live"],
+    } for e in events]
+
+    losses = [{"opponent": g["opponent"], "abbr": g["abbr"], "score": g["result"], "date": g["date"]}
+              for g in games if g.get("result") and g["result"].startswith("L")]
+
+    rank = current_rank(events)
+
+    return {
+        "updated": datetime.now(timezone.utc).isoformat(),
+        "record": compute_record(games),
+        "rank": rank,
+        "losses": losses,
+        "last_loss": losses[-1] if losses else None,
+        "next": next((g for g in games if g.get("status") != "post"), None),
+        "games": games,
+    }
+
+
 def write_atomic(path, obj):
     tmp = path + ".tmp"
     json.dump(obj, open(tmp, "w"), indent=2)
@@ -251,6 +376,14 @@ def run_once(with_weather=True):
         wx = fetch_weather(sched)
         write_atomic(WEATHER, wx)
         log(f"weather written for {len(wx['games'])} game(s)")
+        try:
+            oregon = fetch_oregon()
+            if oregon:
+                write_atomic(OREGON, oregon)
+                log(f"oregon written: {oregon['record']['w']}-{oregon['record']['l']}, "
+                    f"rank {oregon['rank']}, {len(oregon['losses'])} loss(es)")
+        except Exception as e:  # never let Oregon tracking take down the updater
+            log("oregon update failed (keeping last good data):", e)
     return sched
 
 

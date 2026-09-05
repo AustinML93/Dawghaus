@@ -246,3 +246,32 @@ main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* --- in-season additions --- */
+.cd-cfb .cd-number.rec { font-size: 3.6rem; letter-spacing: 2px; }
+.cd-cfb .cd-clock.w { color: var(--win); }
+.cd-cfb .cd-clock.l { color: var(--danger); }
+.cd-cfb .cd-sub .pact { display: block; margin-top: 6px; color: #ffb3b3; font-weight: 800; letter-spacing: .5px; }
+.hype.is-duckweek .hype-fill { background: linear-gradient(90deg, #154733, #FEE123); }
+.hype.is-duckweek .hype-cap { color: #FEE123; }
+
+/* Duck Watch */
+.duckwatch { margin-top: 16px; }
+.duck-card { border-radius: 16px; padding: 16px; text-align: center;
+  background: linear-gradient(160deg, rgba(21,71,51,.35), rgba(40,12,40,.3)); border: 1px solid rgba(254,225,35,.25); }
+.duck-head { font-size: .8rem; font-weight: 800; letter-spacing: 2px; color: var(--muted); display: flex; justify-content: center; gap: 10px; align-items: baseline; }
+.duck-rec { color: #FEE123; font-weight: 900; letter-spacing: 0; }
+.duck-loss { margin: 10px 0 0; font-size: 1.05rem; font-weight: 700; color: var(--ink); line-height: 1.35; text-wrap: balance; }
+.duck-loss.lost { color: #ffb3b3; }
+.duck-fact { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,.12); }
+.duck-fact-label { font-size: .66rem; font-weight: 800; letter-spacing: 2px; color: var(--muted); }
+.duck-fact p { margin: 6px 0 0; font-size: .92rem; color: var(--gold-bright); line-height: 1.4; text-wrap: balance; }
+
+/* Oregon week takeover */
+body.oregon-week .bg-glow { filter: hue-rotate(90deg) saturate(1.3); }
+body.oregon-week .cd-husky { border-color: rgba(254,225,35,.6); box-shadow: 0 0 0 2px rgba(21,71,51,.6), var(--shadow); }
+body.oregon-week .snark-line { color: #FEE123; }
+
+/* Gameday: siren gets bigger and louder-looking */
+body.gameday .td-fab { transform: scale(1.25); transform-origin: bottom right; animation: sirenidle 2.4s ease-in-out infinite; }
+@keyframes sirenidle { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.35) drop-shadow(0 0 14px rgba(255,90,90,.7)); } }

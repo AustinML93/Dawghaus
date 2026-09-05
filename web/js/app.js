@@ -15,10 +15,11 @@ async function loadData() {
     $("scheduleList").innerHTML = '<p class="muted">Couldn\'t load the schedule. The updater may still be warming up. Refresh in a bit.</p>';
     return;
   }
-  await loadWeather();
+  await Promise.all([loadWeather(), loadDucks()]);
   render();
   tick();
   setInterval(tick, 1000);
+  setInterval(renderHype, 60000);
   scheduleRefresh();
 }
 
@@ -38,7 +39,7 @@ async function refreshData() {
       const fresh = await res.json();
       if (JSON.stringify(fresh) !== JSON.stringify(DATA)) {
         DATA = fresh;
-        await loadWeather();
+        await Promise.all([loadWeather(), loadDucks()]);
         render();
         tick();
       }
@@ -47,6 +48,14 @@ async function refreshData() {
   scheduleRefresh();
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden && DATA) refreshData(); });
+
+let DUCKDATA = null;
+async function loadDucks() {
+  try {
+    const res = await fetch("/data/oregon.json", { cache: "no-store" });
+    if (res.ok) DUCKDATA = await res.json();
+  } catch (_) { /* optional */ }
+}
 
 let WEATHER = {};
 async function loadWeather() {
@@ -117,11 +126,34 @@ function record() {
   (DATA.games || []).forEach(g => { if (g.result) (g.result[0] === "W" ? w++ : l++); });
   return { w, l, played: w + l };
 }
+function playedGames() {
+  return (DATA.games || []).filter(g => !g.bye && g.kickoff).sort((a,b) => parse(a.kickoff) - parse(b.kickoff));
+}
+function firstGame() { return playedGames()[0] || null; }
+function lastPlayed() { return playedGames().filter(g => gameOver(g) && g.result).pop() || null; }
+// In-season = the opener has kicked off (or is today).
+function inSeason() {
+  const f = firstGame();
+  return !!f && daysUntil(parse(f.kickoff)) <= 0;
+}
+// Most recent result is "fresh" for 72h — long enough to gloat/cope through the week's start.
+function freshResult() {
+  const g = lastPlayed();
+  if (!g) return null;
+  const age = now() - parse(g.kickoff);
+  return age < 72 * 3600000 ? g : null;
+}
+function isDuckWeek(hg) {
+  return !!hg && hg.rivalry === "oregon" && daysUntil(parse(hg.kickoff)) <= 7;
+}
+function postseasonGame() { return (DATA.games || []).find(g => g.postseason && !gameOver(g)) || null; }
+function ducks() { return (typeof DUCKS !== "undefined") ? DUCKS : null; }
 
 // --- rendering ---
 function render() {
   renderSchedule();
   renderOregon();
+  renderDuckWatch();
   renderHype();
   // share/install wired separately
 }
@@ -144,11 +176,21 @@ function tick() {
     const tv = hg.tv ? ` · ${hg.tv}` : "";
     $("huskySub").textContent = `${hg.home ? "vs" : "@"} ${hg.opponent}${tbd}${live ? " 🔴" : (hg.timeConfirmed ? " · " + fmtTime(k) : "")}${tv}`;
     $("huskyCard").classList.toggle("is-live", live);
-    $("huskyTitle").textContent = live ? "🔴 DAWGS LIVE" : (record().played ? "🐺 Next up in" : "🐺 The Dawgs are back in");
+    const duckWeek = isDuckWeek(hg);
+    document.body.classList.toggle("oregon-week", duckWeek);
+    document.body.classList.toggle("gameday", d === 0 || live);
+    $("huskyTitle").textContent = live ? "🔴 DAWGS LIVE"
+      : duckWeek ? "🦆 DUCK HUNT IN"
+      : hg.postseason ? "🩸 BOWL GAME IN"
+      : (record().played ? "🐺 Next up in" : "🐺 The Dawgs are back in");
+    const fresh = !live && freshResult();
+    const D = ducks();
     $("snarkLine").textContent = live
       ? (sc && hg.live.us > hg.live.them ? "THE DAWGS ARE WINNING RIGHT NOW. Why are you reading this?"
          : sc && hg.live.us < hg.live.them ? "It's fine. We're fine. Everything is fine. (Trailing. Keep barking.)"
          : "THE DAWGS ARE PLAYING RIGHT NOW. Why are you reading this?")
+      : (duckWeek && D) ? D.oregonWeek(d)
+      : (fresh && D && d > 1) ? (fresh.result[0] === "W" ? D.gloat(fresh) : D.cope(fresh))
       : SNARK.headline(d);
   } else {
     $("huskyDays").textContent = "✓";
@@ -157,8 +199,10 @@ function tick() {
     $("snarkLine").textContent = SNARK.flavor();
   }
 
-  // CFB opener countdown
-  if (cfb) {
+  // Second card: CFB opener countdown pre-season, Record card in-season.
+  if (inSeason()) {
+    renderRecordCard();
+  } else if (cfb) {
     const d = daysUntil(cfb);
     if (d >= 0) {
       $("cfbDays").textContent = d;
@@ -180,26 +224,108 @@ function tick() {
   });
 }
 
+function renderRecordCard() {
+  const rec = record();
+  const last = lastPlayed();
+  const rank = DATA.rank ? `#${DATA.rank} ` : "";
+  $("cfbTitle").textContent = "📊 The Record";
+  const num = $("cfbDays");
+  num.textContent = rec.played ? `${rec.w}-${rec.l}` : "0-0";
+  num.classList.add("rec");
+  $("cfbUnit").textContent = rank ? `${rank}Huskies` : (rec.played ? (rec.l === 0 ? "undefeated" : "record") : "kickoff pending");
+  const clk = $("cfbClock");
+  clk.classList.remove("w", "l");
+  if (last) {
+    const won = last.result[0] === "W";
+    clk.textContent = `${won ? "Beat" : "Lost to"} ${last.opponent} ${last.result.slice(2)}`;
+    clk.classList.add(won ? "w" : "l");
+  } else {
+    clk.textContent = "No results yet";
+  }
+  const bowl = postseasonGame();
+  const oreg = (DATA.games || []).find(g => g.rivalry === "oregon");
+  let sub = rec.played
+    ? (rec.l === 0 ? "Zero losses. Zero chill." : rec.w > rec.l ? "Winning record. Act like you've been here." : "It's a rebuild. It's a vibe. It's fine.")
+    : "Season's here. Bow down.";
+  if (oreg && oreg.result) sub = oreg.result[0] === "W" ? "AND WE BEAT OREGON. Season complete, spiritually." : "Oregon happened. We don't talk about it.";
+  $("cfbSub").innerHTML = sub + (bowl ? `<span class="pact">🩸 BLOOD PACT ACTIVATED — vs ${bowl.opponent}</span>` : "");
+}
+
+function renderDuckWatch() {
+  const D = ducks();
+  const dd = DUCKDATA;
+  if (dd && dd.record) {
+    const r = dd.record;
+    $("duckRecord").textContent = `${dd.rank ? "#" + dd.rank + " · " : ""}${r.w}-${r.l}`;
+  } else {
+    $("duckRecord").textContent = "";
+  }
+  const lossEl = $("duckLoss");
+  if (dd && dd.losses && dd.losses.length) {
+    const L = dd.losses[dd.losses.length - 1];
+    lossEl.textContent = D ? D.duckLoss(L) : `Oregon lost to ${L.opponent} (${L.score}). Delightful.`;
+    lossEl.classList.add("lost");
+  } else if (dd && dd.record) {
+    lossEl.textContent = D ? D.duckUndefeated() : "Oregon hasn't lost yet. It's early. Their schedule is soft.";
+    lossEl.classList.remove("lost");
+  } else {
+    lossEl.textContent = D ? D.duckUndefeated() : "Duck intel loading…";
+  }
+  $("duckFact").textContent = D ? D.fact().text : "Oregon has never won a national championship in football. That's the fact. Every day.";
+}
+
 function renderHype() {
-  const hg = nextHuskyGame() || (DATA.games || []).find(g => !g.bye && g.kickoff);
-  const opener = (DATA.games || []).filter(g => !g.bye && g.kickoff)
-    .sort((a,b)=>parse(a.kickoff)-parse(b.kickoff))[0];
+  const hg = nextHuskyGame();
+  const opener = firstGame();
   if (!opener) return;
-  const target = parse(opener.kickoff);
-  const start = new Date(target.getTime() - 250 * MS_DAY); // hype ramps over ~250 days
   const t = now().getTime();
+  const season = inSeason();
+  const duckWeek = isDuckWeek(hg);
+  let target, start, caps;
+  if (!season) {
+    // Pre-season: one long ramp to the opener.
+    target = parse(opener.kickoff);
+    start = new Date(target.getTime() - 250 * MS_DAY);
+    caps = [
+      [25, "Barely contained. We're vibrating."],
+      [50, "Hype rising. Resistance is futile."],
+      [75, "Dangerously hyped. Approach with snacks."],
+      [95, "MAXIMUM HYPE. Somebody check on this guy."],
+      [101, "🔥 FULLY UNHINGED. IT'S HERE. 🔥"],
+    ];
+    $("hypeLabel").textContent = "HYPE METER";
+  } else if (hg) {
+    // In-season: weekly ramp from the previous game (or 7 days out) to the next kickoff.
+    target = parse(hg.kickoff);
+    const prev = playedGames().filter(g => parse(g.kickoff) < target).pop();
+    const weekAgo = new Date(target.getTime() - 7 * MS_DAY);
+    start = prev ? new Date(Math.max(parse(prev.kickoff).getTime() + 4 * 3600000, weekAgo.getTime())) : weekAgo;
+    caps = duckWeek ? [
+      [25, "Duck week. Sharpening things."],
+      [50, "Halfway to Eugene. The smell is already here."],
+      [75, "Nike money can't buy what's coming."],
+      [95, "DUCK SEASON. LICENSES ARE FREE."],
+      [101, "🦆🔪 HUNT. THEM. DOWN. 🔪🦆"],
+    ] : [
+      [25, "Recovering. Rehydrating. Replaying the highlights."],
+      [50, "Midweek. The hype is compounding."],
+      [75, "Gameday is close. Jersey's already out."],
+      [95, "IT'S ALMOST TIME. Tailgate math in progress."],
+      [101, "🔥 GAMEDAY. BOW DOWN. 🔥"],
+    ];
+    $("hypeLabel").textContent = duckWeek ? "DUCK HUNT METER" : "WEEKLY HYPE";
+  } else {
+    $("hypeFill").style.width = "100%"; $("hypePct").textContent = "∞";
+    $("hypeLabel").textContent = "HYPE METER";
+    $("hypeCap").textContent = "Season's over. Hype is now a lifestyle.";
+    return;
+  }
+  $("hypeCard").classList.toggle("is-duckweek", duckWeek);
   let pct = (t - start.getTime()) / (target.getTime() - start.getTime()) * 100;
   pct = Math.max(2, Math.min(100, pct));
   if (t >= target.getTime()) pct = 100;
   $("hypeFill").style.width = pct.toFixed(1) + "%";
   $("hypePct").textContent = Math.round(pct) + "%";
-  const caps = [
-    [25, "Barely contained. We're vibrating."],
-    [50, "Hype rising. Resistance is futile."],
-    [75, "Dangerously hyped. Approach with snacks."],
-    [95, "MAXIMUM HYPE. Somebody check on this guy."],
-    [101, "🔥 FULLY UNHINGED. IT'S HERE. 🔥"],
-  ];
   $("hypeCap").textContent = (caps.find(c => pct < c[0]) || caps[caps.length-1])[1];
 }
 
@@ -306,7 +432,11 @@ function wireButtons() {
     const hg = nextHuskyGame();
     const d = hg ? daysUntil(parse(hg.kickoff)) : null;
     const rec = record();
-    const text = hg && isLive(hg)
+    const fresh = freshResult();
+    const D = ducks();
+    const text = fresh && D
+      ? `${fresh.result[0] === "W" ? "DAWGS WIN" : "Dawgs lost"} ${fresh.result.slice(2)} ${fresh.home ? "vs" : "@"} ${fresh.opponent}. ${fresh.result[0] === "W" ? D.gloat(fresh) : D.cope(fresh)} 🐺`
+      : hg && isLive(hg)
       ? `Dawgs are LIVE right now ${hg.home ? "vs" : "@"} ${hg.opponent} 🐺🔴 Get in here:`
       : d != null && rec.played
       ? `Huskies are ${rec.w}-${rec.l}. ${d} days until we ${hg.home ? "host" : "visit"} ${hg.opponent} 🐺 (still the last Pac-12 champs):`
@@ -336,10 +466,13 @@ function wireButtons() {
   document.addEventListener("touchdown:stopped", () => $("tdBtn").classList.remove("is-blasting"));
 
   // Trash talk
+  const trashLine = () => {
+    const D = ducks();
+    const duckWeek = DATA && isDuckWeek(nextHuskyGame());
+    return (D && (duckWeek || Math.random() < 0.4)) ? D.trash() : TRASH.generate();
+  };
   $("trashText").textContent = TRASH.ofTheDay();
-  $("trashBtn").addEventListener("click", () => {
-    $("trashText").textContent = TRASH.generate();
-  });
+  $("trashBtn").addEventListener("click", () => { $("trashText").textContent = trashLine(); });
 
   // Theme toggle (dark default, light is cream + purple + gold)
   const themeBtn = $("themeBtn");

@@ -3,18 +3,17 @@
 Parking lot for things we've discussed but haven't built.
 
 ## In-season mode (proposed 2026-09-04, season just started)
-Shipped so far: live score + clock in the hero card, FINAL/W-L results in the slate, TV network,
-adaptive polling, stale-sync warning. Candidates for the next pass:
-- **Retire the "College football returns in" card** once Week 0 passes; replace with a
-  **Record / Last game** card (e.g. "1-0 · beat WSU 31-24 · next: Utah State Sat 12:30 BTN").
-- **Hype meter → Week hype**: reset each week and ramp toward the next kickoff instead of
-  pinning at 100% all season. Bigger multiplier for Oregon week.
-- **Gameday mode**: on kickoff day, jump straight to the live card, show weather + TV +
-  a "where are we watching" line; siren button gets bigger.
-- **Post-game snark**: W → gloat lines; L → cope lines; auto-generated share text with the score.
-- **Oregon week**: countdown to Nov 28 takes over the header; trash talk goes 100% duck-flavored.
-- **Rankings**: ESPN returns `curatedRank.current` (AP) per team — show "#17 Huskies".
-- **Bowl / CFP**: once ESPN adds postseason events, they'll appear via the same feed.
+Shipped 2026-09-04: live scoreboard, FINAL/W-L in the slate, TV, adaptive polling, stale-sync
+warning, Record card (replaces the CFB countdown once the opener kicks), weekly hype meter,
+post-game gloat/cope headline + share text (72h window), Oregon-week takeover (Duck Hunt meter,
+all-duck trash talk, green tint), Duck Watch card (Oregon record/rank, "Oregon lost to X",
+Duck Fact of the Day from `web/js/ducks.js`), AP ranks, bowl auto-append with 🩸 BLOOD PACT line,
+bigger siren on gameday.
+Still open:
+- **Shared siren tap counter** — needs a tiny backend (Worker or endpoint on the box). Parked
+  until Mike says go.
+- **Gameday "where are we watching"** line — needs a data source (manual field in schedule.json?).
+- **Shareable score card image** — canvas-render the Record card + gloat line for the group chat.
 
 - **Soundboard card** — a dedicated section holding Fight Song + Touchdown (and any
   future sounds) to declutter the top bar. *Parked 2026-06-24 in favor of a floating
