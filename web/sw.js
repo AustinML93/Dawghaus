@@ -1,16 +1,16 @@
 /* DawgHaus service worker — offline-first shell, fresh data. */
-const CACHE = "dawghaus-v8";
+const CACHE = "dawghaus-v9";
 const SHELL = [
   "/",
   "/index.html",
-  "/css/styles.css?v=8",
-  "/js/app.js?v=8",
-  "/js/snark.js?v=8",
-  "/js/trashtalk.js?v=8",
-  "/js/ducks.js?v=8",
-  "/js/sharecard.js?v=8",
-  "/js/fightsong.js?v=8",
-  "/js/touchdown.js?v=8",
+  "/css/styles.css?v=9",
+  "/js/app.js?v=9",
+  "/js/snark.js?v=9",
+  "/js/trashtalk.js?v=9",
+  "/js/ducks.js?v=9",
+  "/js/sharecard.js?v=9",
+  "/js/fightsong.js?v=9",
+  "/js/touchdown.js?v=9",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",

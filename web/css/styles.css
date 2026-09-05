@@ -293,3 +293,18 @@ body.gameday .td-fab { transform: scale(1.25); transform-origin: bottom right; a
   box-shadow: 0 2px 8px rgba(0,0,0,.5); font-variant-numeric: tabular-nums; }
 .td-count.bump { animation: countbump .35s ease; }
 @keyframes countbump { 0% { transform: scale(1); } 40% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+/* Where we watching */
+.watch { margin-top: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(183,165,122,.35); border-radius: 16px; padding: 14px 16px; }
+.watch-head { font-size: .78rem; font-weight: 800; letter-spacing: 2px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.watch-game { letter-spacing: 0; color: var(--gold-bright); font-weight: 700; }
+.watch-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip { border: 1px solid rgba(183,165,122,.45); background: rgba(183,165,122,.08); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-size: .88rem; cursor: pointer; }
+.chip.mine { background: var(--gold); color: #2d1b50; border-color: var(--gold-bright); }
+.chip:active { transform: scale(.96); }
+.watch-tally { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.tally-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: .85rem; }
+.tally-bar { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: rgba(0,0,0,.35); overflow: hidden; }
+.tally-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); }
+.tally-row.lead .tally-name { color: var(--gold-bright); font-weight: 800; }
+.watch-lead { margin: 10px 0 0; font-size: .9rem; color: var(--gold-bright); font-weight: 700; text-align: center; }

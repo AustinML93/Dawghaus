@@ -17,7 +17,7 @@ No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
 - `web/` — the PWA: `index.html`, `css/styles.css`, `js/{app,snark,trashtalk,fightsong,touchdown}.js`, `sw.js`, `manifest.webmanifest`, `icons/`, `audio/`.
 - `data/schedule.json` — hand-seeded 2026 schedule; the updater merges live data onto it.
 - `updater/update.py` — stdlib-only; pulls ESPN (team **264**) for kickoff/TV/scores and Open-Meteo for home-game weather. No API keys. Runs on a loop (`UPDATE_INTERVAL`, default 6h; drop to 1800 once the season's near).
-- `api/siren.py` — stdlib HTTP server, the ONLY stateful piece: shared siren tap counter at `/api/siren` (GET/POST), state in `data/siren.json`, light per-IP rate limit. nginx proxies `/api/` → `api:8080` (lazy Docker-DNS resolve so nginx boots even if api is slow).
+- `api/server.py` — stdlib HTTP server, the ONLY stateful piece: shared siren tap counter at `/api/siren` (GET/POST, `data/siren.json`) and where-we-watching votes at `/api/watch` (GET `?game=`, POST `{game,voter,spot}`, `data/watch.json`, one vote per voter id per game). Light per-IP rate limit. Spot names are user text: render with textContent only. nginx proxies `/api/` → `api:8080` (lazy Docker-DNS resolve so nginx boots even if api is slow).
 - `docker-compose.yml` (web=nginx, api=python, updater=python), `nginx.conf`, `deploy.sh`, `BACKLOG.md`.
 
 ## Deploy
@@ -28,7 +28,7 @@ No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
 
 ## ⚠️ Caching — read before debugging "my change isn't live"
 These each cost real time once. In order of how often they bite:
-1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=8`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
+1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=9`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
 2. **Service worker:** bump `CACHE = "dawghaus-vN"` in `web/sw.js` on every shell change. Clients need a full PWA close/reopen (sometimes twice).
 3. **`nginx.conf` is a single-file bind mount:** `git pull` swaps the inode, so a plain reload serves OLD config — `deploy.sh` uses `--force-recreate` to fix. Verify: `docker exec dawghaus-web grep -n 'location ~' /etc/nginx/conf.d/default.conf`.
 4. **LAN DNS via AdGuard Home** (`192.168.1.200`): after CF DNS changes it can hold a stale/negative cache for the whole LAN. `docker restart adguardhome` clears it (brief blip). Cellular bypasses it.

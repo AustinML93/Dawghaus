@@ -18,6 +18,7 @@ async function loadData() {
   await Promise.all([loadWeather(), loadDucks()]);
   render();
   tick();
+  document.dispatchEvent(new CustomEvent("dawghaus:data"));
   setInterval(tick, 1000);
   setInterval(renderHype, 60000);
   scheduleRefresh();
@@ -42,6 +43,7 @@ async function refreshData() {
         await Promise.all([loadWeather(), loadDucks()]);
         render();
         tick();
+        document.dispatchEvent(new CustomEvent("dawghaus:data"));
       }
     }
   } catch (_) { /* try again next round */ }
@@ -461,6 +463,68 @@ const SIREN = (() => {
   return { start: poll, tap, get: () => counts };
 })();
 
+// --- where we watching (crew votes per game via /api/watch) ---
+const WATCH = (() => {
+  const PRESETS = ["Little Woodrow's", "Lavaca Street Bar", "Someone's house"];
+  let votes = {}, mine = null, game = null, timer = null;
+  function voterId() {
+    try {
+      let id = localStorage.getItem("dawghaus-id");
+      if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g, ""); localStorage.setItem("dawghaus-id", id); }
+      return id;
+    } catch (_) { return "anon-" + Math.random().toString(36).slice(2); }
+  }
+  function myKey() { return "dawghaus-watch-" + game; }
+  function paint() {
+    const card = $("watchCard");
+    if (!game) { card.hidden = true; return; }
+    card.hidden = false;
+    const spots = [...new Set([...PRESETS, ...Object.keys(votes)])];
+    const chips = $("watchChips"); chips.innerHTML = "";
+    spots.forEach(s => {
+      const b = document.createElement("button"); b.className = "chip" + (s === mine ? " mine" : ""); b.textContent = s;
+      b.addEventListener("click", () => vote(s === mine ? "" : s)); chips.appendChild(b);
+    });
+    const other = document.createElement("button"); other.className = "chip"; other.textContent = "Other…";
+    other.addEventListener("click", () => { const v = prompt("Where we watching?"); if (v != null) vote(v.trim()); });
+    chips.appendChild(other);
+    const tally = $("watchTally"); tally.innerHTML = "";
+    const ranked = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+    const max = ranked.length ? ranked[0][1] : 1;
+    ranked.forEach(([s, n], i) => {
+      const row = document.createElement("div"); row.className = "tally-row" + (i === 0 ? " lead" : "");
+      const name = document.createElement("span"); name.className = "tally-name"; name.textContent = s;
+      const cnt = document.createElement("span"); cnt.textContent = n;
+      const bar = document.createElement("div"); bar.className = "tally-bar"; const fill = document.createElement("i"); fill.style.width = (n / max * 100) + "%"; bar.appendChild(fill);
+      row.append(name, cnt, bar); tally.appendChild(row);
+    });
+    const total = ranked.reduce((a, [, n]) => a + n, 0);
+    $("watchLead").textContent = !total ? "Nobody's committed. Cowards. Tap a spot."
+      : ranked.length > 1 && ranked[0][1] === ranked[1][1] ? `Deadlock between ${ranked[0][0]} and ${ranked[1][0]}. Somebody break it.`
+      : `Consensus: ${ranked[0][0]} (${ranked[0][1]} of ${total}). Be there.`;
+  }
+  async function refresh() {
+    const hg = DATA && nextHuskyGame();
+    game = hg ? (hg.id || hg.espnId || hg.date) : null;
+    if (game) { try { mine = localStorage.getItem(myKey()); } catch (_) {} }
+    if (game) {
+      try { const r = await fetch(`/api/watch?game=${encodeURIComponent(game)}`, { cache: "no-store" }); if (r.ok) votes = (await r.json()).votes || {}; } catch (_) {}
+    }
+    paint();
+    clearTimeout(timer); timer = setTimeout(refresh, 120000);
+    $("watchGame").textContent = hg ? `${hg.home ? "vs" : "@"} ${hg.opponent}${hg.timeConfirmed ? " · " + fmtTime(parse(hg.kickoff)) : ""}` : "";
+  }
+  async function vote(spot) {
+    if (!game) return;
+    spot = (spot || "").slice(0, 40);
+    try {
+      const r = await fetch("/api/watch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ game, voter: voterId(), spot }) });
+      if (r.ok) { votes = (await r.json()).votes || {}; mine = spot || null; try { spot ? localStorage.setItem(myKey(), spot) : localStorage.removeItem(myKey()); } catch (_) {} paint(); }
+    } catch (_) {}
+  }
+  return { refresh, leader: () => { const r = Object.entries(votes).sort((a, b) => b[1] - a[1])[0]; return r ? r[0] : null; } };
+})();
+
 // --- share card ---
 async function shareCard() {
   if (!DATA || typeof SHARECARD === "undefined") return;
@@ -477,7 +541,7 @@ async function shareCard() {
       const d = daysUntil(parse(hg.kickoff));
       st = { mode: "countdown", days: Math.max(0, d), opponent: hg.opponent, home: hg.home,
              when: hg.timeConfirmed ? fmtTime(parse(hg.kickoff)) + (hg.tv ? " · " + hg.tv : "") : "time TBD",
-             line: isDuckWeek(hg) && D ? D.oregonWeek(d) : SNARK.headline(d), text: `${d} days until Husky football 🐺` };
+             line: (WATCH.leader() ? `📍 Crew's watching at ${WATCH.leader()}. ` : "") + (isDuckWeek(hg) && D ? D.oregonWeek(d) : SNARK.headline(d)), text: `${d} days until Husky football 🐺` };
     } else {
       st = { mode: "countdown", days: 0, opponent: "next season", home: true, line: SNARK.flavor(), text: "Husky football 🐺" };
     }
@@ -528,6 +592,7 @@ function wireButtons() {
   document.addEventListener("touchdown:started", () => { $("tdBtn").classList.add("is-blasting"); SIREN.tap(); });
   document.addEventListener("touchdown:stopped", () => $("tdBtn").classList.remove("is-blasting"));
   SIREN.start();
+  document.addEventListener("dawghaus:data", () => WATCH.refresh());
 
   // Share card
   $("cardBtn").addEventListener("click", shareCard);

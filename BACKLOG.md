@@ -13,8 +13,12 @@ Shipped 2026-09-04 (pass 2): **shared siren tap counter** (`api/siren.py`, stdli
 `/api/siren`, state in `data/siren.json`; badge on the FAB = today's pulls, season total on the
 Record card) and **shareable score card** (`web/js/sharecard.js`, canvas PNG → native share sheet,
 falls back to a long-press-to-save dialog). Slate now shows kickoff time on rivalry rows too.
-Still open:
-- **Gameday "where are we watching"** line — needs a data source (manual field in schedule.json?).
+Shipped 2026-09-04 (pass 3): **Where We Watching?** card — crew votes per game (`/api/watch`,
+one vote per phone via a localStorage id, changeable, presets Little Woodrow's / Lavaca Street
+Bar / Someone's house / Other…), tally + consensus line, leader spot lands on the countdown
+share card. No manual data entry.
+Still open: nothing big. Ideas: crew inside-joke trash talk (waiting on lines from Mike),
+"Cope" button for when things go wrong, bowl-week blood-pact roll call (who's in).
 
 - **Soundboard card** — a dedicated section holding Fight Song + Touchdown (and any
   future sounds) to declutter the top bar. *Parked 2026-06-24 in favor of a floating
