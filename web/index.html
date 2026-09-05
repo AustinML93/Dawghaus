@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="DawgHaus" />
   <link rel="icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/styles.css?v=5" />
+  <link rel="stylesheet" href="/css/styles.css?v=6" />
   <script>
     // Apply saved theme before paint to avoid a flash.
     try { var t = localStorage.getItem("dawghaus-theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}
@@ -42,9 +42,9 @@
 
     <section class="countdowns" aria-label="Countdowns">
       <article class="cd-card cd-husky" id="huskyCard">
-        <h2 class="cd-title">🐺 The Dawgs are back in</h2>
+        <h2 class="cd-title" id="huskyTitle">🐺 The Dawgs are back in</h2>
         <div class="cd-number" id="huskyDays">—</div>
-        <div class="cd-unit">days</div>
+        <div class="cd-unit" id="huskyUnit">days</div>
         <div class="cd-clock" id="huskyClock">--:--:--</div>
         <div class="cd-sub" id="huskySub">Loading…</div>
       </article>
@@ -106,10 +106,10 @@
 
   <button id="tdBtn" class="td-fab" title="Touchdown siren!" aria-label="Touchdown siren">🚨</button>
 
-  <script src="/js/snark.js?v=5"></script>
-  <script src="/js/trashtalk.js?v=5"></script>
-  <script src="/js/fightsong.js?v=5"></script>
-  <script src="/js/touchdown.js?v=5"></script>
-  <script src="/js/app.js?v=5"></script>
+  <script src="/js/snark.js?v=6"></script>
+  <script src="/js/trashtalk.js?v=6"></script>
+  <script src="/js/fightsong.js?v=6"></script>
+  <script src="/js/touchdown.js?v=6"></script>
+  <script src="/js/app.js?v=6"></script>
 </body>
 </html>

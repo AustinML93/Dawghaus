@@ -4,7 +4,7 @@
     "name": "Washington Huskies",
     "espnId": 264
   },
-  "updated": "2026-06-24T20:29:26.271214+00:00",
+  "updated": "2026-09-05T00:18:09.555297+00:00",
   "oregon_last_win": "2023-12-01",
   "pac12_champs": true,
   "cfb_opener": {
@@ -17,40 +17,46 @@
       "id": "wsu",
       "opponent": "Washington State",
       "abbr": "WSU",
-      "date": "2026-09-05",
-      "kickoff": "2026-09-05T12:30:00-07:00",
+      "date": "2026-09-06",
+      "kickoff": "2026-09-06T13:00-07:00",
       "home": true,
       "neutral": false,
-      "tv": null,
+      "tv": "NBC",
       "result": null,
       "rivalry": "apple-cup",
-      "timeConfirmed": false
+      "timeConfirmed": true,
+      "espnId": "401858437",
+      "status": "pre"
     },
     {
       "id": "usu",
       "opponent": "Utah State",
       "abbr": "USU",
       "date": "2026-09-12",
-      "kickoff": "2026-09-12T12:30:00-07:00",
+      "kickoff": "2026-09-12T12:30-07:00",
       "home": true,
       "neutral": false,
-      "tv": null,
+      "tv": "BTN",
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": true,
+      "espnId": "401858446",
+      "status": "pre"
     },
     {
       "id": "ewu",
       "opponent": "Eastern Washington",
       "abbr": "EWU",
       "date": "2026-09-19",
-      "kickoff": "2026-09-19T12:30:00-07:00",
+      "kickoff": "2026-09-19T16:15-07:00",
       "home": true,
       "neutral": false,
-      "tv": null,
+      "tv": "BTN",
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": true,
+      "espnId": "401858459",
+      "status": "pre"
     },
     {
       "id": "minn",
@@ -63,7 +69,9 @@
       "tv": null,
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": false,
+      "espnId": "401858470",
+      "status": "pre"
     },
     {
       "id": "usc",
@@ -76,33 +84,39 @@
       "tv": null,
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": false,
+      "espnId": "401858478",
+      "status": "pre"
     },
     {
       "id": "iowa",
       "opponent": "Iowa",
       "abbr": "IOWA",
-      "date": "2026-10-10",
-      "kickoff": "2026-10-10T12:30:00-07:00",
+      "date": "2026-10-09",
+      "kickoff": "2026-10-09T18:00-07:00",
       "home": true,
       "neutral": false,
       "tv": null,
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": true,
+      "espnId": "401858487",
+      "status": "pre"
     },
     {
       "id": "pur",
       "opponent": "Purdue",
       "abbr": "PUR",
-      "date": "2026-10-17",
-      "kickoff": "2026-10-17T12:30:00-07:00",
+      "date": "2026-10-16",
+      "kickoff": "2026-10-16T17:00-07:00",
       "home": false,
       "neutral": false,
-      "tv": null,
+      "tv": "FOX",
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": true,
+      "espnId": "401858493",
+      "status": "pre"
     },
     {
       "id": "bye1",
@@ -120,7 +134,9 @@
       "tv": null,
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": false,
+      "espnId": "401858504",
+      "status": "pre"
     },
     {
       "id": "psu",
@@ -133,7 +149,9 @@
       "tv": null,
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": false,
+      "espnId": "401858516",
+      "status": "pre"
     },
     {
       "id": "msu",
@@ -146,7 +164,9 @@
       "tv": null,
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": false,
+      "espnId": "401858521",
+      "status": "pre"
     },
     {
       "id": "ind",
@@ -159,7 +179,9 @@
       "tv": null,
       "result": null,
       "rivalry": null,
-      "timeConfirmed": false
+      "timeConfirmed": false,
+      "espnId": "401858535",
+      "status": "pre"
     },
     {
       "id": "ore",
@@ -172,7 +194,9 @@
       "tv": null,
       "result": null,
       "rivalry": "oregon",
-      "timeConfirmed": false
+      "timeConfirmed": false,
+      "espnId": "401858541",
+      "status": "pre"
     }
   ]
 }

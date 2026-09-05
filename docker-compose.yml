@@ -19,7 +19,8 @@ services:
     working_dir: /app
     command: ["python", "update.py"]
     environment:
-      - UPDATE_INTERVAL=21600   # 6h; bump down to ~1800 once the season starts
+      - UPDATE_INTERVAL=1800    # 30 min in-season; updater self-drops to LIVE_INTERVAL during games
+      - LIVE_INTERVAL=120
       - DATA_DIR=/data
     volumes:
       - ./updater:/app:ro

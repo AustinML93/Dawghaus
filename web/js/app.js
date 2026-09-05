@@ -19,7 +19,34 @@ async function loadData() {
   render();
   tick();
   setInterval(tick, 1000);
+  scheduleRefresh();
 }
+
+// In-season: re-pull schedule.json so scores/status update without a reload.
+// Every 60s while a game is live or within an hour of kickoff, else every 10 min.
+let refreshTimer = null;
+function scheduleRefresh() {
+  const hg = nextHuskyGame();
+  const soon = hg && (isLive(hg) || (parse(hg.kickoff) - now()) < 3600000);
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(refreshData, soon ? 60000 : 600000);
+}
+async function refreshData() {
+  try {
+    const res = await fetch("/data/schedule.json", { cache: "no-store" });
+    if (res.ok) {
+      const fresh = await res.json();
+      if (JSON.stringify(fresh) !== JSON.stringify(DATA)) {
+        DATA = fresh;
+        await loadWeather();
+        render();
+        tick();
+      }
+    }
+  } catch (_) { /* try again next round */ }
+  scheduleRefresh();
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && DATA) refreshData(); });
 
 let WEATHER = {};
 async function loadWeather() {
@@ -57,21 +84,38 @@ function clockUntil(date) {
   return (dd>0 ? dd+"d " : "") + `${hh}:${mm}:${ss}`;
 }
 
+// Game state. Prefer ESPN's status (pre/in/post) from the updater; fall back to
+// a kickoff + 4h window if the status is missing (e.g. updater offline).
+function gameOver(g) {
+  if (!g || g.bye) return false;
+  if (g.status) return g.status === "post";
+  const k = parse(g.kickoff);
+  return !!k && k.getTime() + 4*3600*1000 < now().getTime();
+}
+function isLive(g) {
+  if (!g || g.bye) return false;
+  if (g.status) return g.status === "in";
+  const k = parse(g.kickoff); if (!k) return false;
+  const t = now().getTime();
+  return t >= k.getTime() && t <= k.getTime() + 4*3600*1000;
+}
 function nextHuskyGame() {
   if (!DATA || !DATA.games) return null;
-  const n = now();
   const upcoming = DATA.games
-    .filter(g => !g.bye && parse(g.kickoff))
-    .filter(g => parse(g.kickoff).getTime() + 4*3600*1000 > n.getTime()) // game still "live" for ~4h
+    .filter(g => !g.bye && parse(g.kickoff) && !gameOver(g))
     .sort((a,b) => parse(a.kickoff) - parse(b.kickoff));
   return upcoming[0] || null;
 }
-
-function isLive(game) {
-  if (!game) return false;
-  const k = parse(game.kickoff).getTime();
-  const t = now().getTime();
-  return t >= k && t <= k + 4*3600*1000;
+function liveScore(g) {
+  const l = g && g.live;
+  if (!l) return null;
+  const q = l.period ? (l.period > 4 ? "OT" : "Q" + l.period) : "";
+  return { line: `UW ${l.us} – ${l.them} ${g.abbr || g.opponent}`, clock: [q, l.clock].filter(Boolean).join(" ") };
+}
+function record() {
+  let w = 0, l = 0;
+  (DATA.games || []).forEach(g => { if (g.result) (g.result[0] === "W" ? w++ : l++); });
+  return { w, l, played: w + l };
 }
 
 // --- rendering ---
@@ -91,13 +135,20 @@ function tick() {
   if (hg) {
     const k = parse(hg.kickoff);
     const d = daysUntil(k);
-    $("huskyDays").textContent = isLive(hg) ? "0" : (d >= 0 ? d : "0");
-    $("huskyClock").textContent = isLive(hg) ? "LIVE NOW 🔴" : clockUntil(k);
+    const live = isLive(hg);
+    const sc = live ? liveScore(hg) : null;
+    $("huskyDays").textContent = live ? (sc ? `${hg.live.us}–${hg.live.them}` : "0") : (d >= 0 ? d : "0");
+    $("huskyUnit").textContent = live ? (sc ? sc.clock || "LIVE" : "LIVE") : "days";
+    $("huskyClock").textContent = live ? (sc ? sc.line : "LIVE NOW 🔴") : clockUntil(k);
     const tbd = hg.timeConfirmed ? "" : " (time TBD)";
-    $("huskySub").textContent = `${hg.home ? "vs" : "@"} ${hg.opponent}${tbd}`;
-    $("huskyCard").classList.toggle("is-live", isLive(hg));
-    $("snarkLine").textContent = isLive(hg)
-      ? "THE DAWGS ARE PLAYING RIGHT NOW. Why are you reading this?"
+    const tv = hg.tv ? ` · ${hg.tv}` : "";
+    $("huskySub").textContent = `${hg.home ? "vs" : "@"} ${hg.opponent}${tbd}${live ? " 🔴" : (hg.timeConfirmed ? " · " + fmtTime(k) : "")}${tv}`;
+    $("huskyCard").classList.toggle("is-live", live);
+    $("huskyTitle").textContent = live ? "🔴 DAWGS LIVE" : (record().played ? "🐺 Next up in" : "🐺 The Dawgs are back in");
+    $("snarkLine").textContent = live
+      ? (sc && hg.live.us > hg.live.them ? "THE DAWGS ARE WINNING RIGHT NOW. Why are you reading this?"
+         : sc && hg.live.us < hg.live.them ? "It's fine. We're fine. Everything is fine. (Trailing. Keep barking.)"
+         : "THE DAWGS ARE PLAYING RIGHT NOW. Why are you reading this?")
       : SNARK.headline(d);
   } else {
     $("huskyDays").textContent = "✓";
@@ -125,6 +176,7 @@ function tick() {
     const k = parse(el.getAttribute("data-cd"));
     const d = daysUntil(k);
     if (d > 0) el.innerHTML = d + '<small>days</small>';
+    else if (d === 0) el.innerHTML = 'TODAY<small>' + fmtClock(k) + '</small>';
   });
 }
 
@@ -176,7 +228,9 @@ function renderSchedule() {
       return;
     }
     const k = parse(g.kickoff || g.date);
-    const past = k && (k.getTime() + 4*3600*1000 < now().getTime());
+    const past = gameOver(g);
+    const live = isLive(g);
+    const sc = liveScore(g);
     const isNext = next && g === next;
     const rival = g.rivalry === "oregon" || g.rivalry === "apple-cup";
 
@@ -184,12 +238,16 @@ function renderSchedule() {
     card.className = "sched-card"
       + (past ? " is-past" : "")
       + (isNext ? " is-next" : "")
+      + (live ? " is-live" : "")
       + (g.rivalry === "apple-cup" ? " is-applecup" : "")
       + (g.rivalry === "oregon" ? " is-rival" : "");
 
     const dt = parseLocalDate(g.date);
     const right = past && g.result
       ? `<div class="sched-result ${g.result[0].toLowerCase()}">${g.result}</div>`
+      : past ? `<div class="sched-result">FINAL</div>`
+      : sc ? `<div class="sched-result live">${g.live.us}–${g.live.them}<small>${sc.clock || "LIVE"}</small></div>`
+      : live ? `<div class="sched-result live">LIVE</div>`
       : `<div class="sched-cd" data-cd="${g.kickoff || g.date}">—</div>`;
 
     const wx = weatherFor(g);
@@ -216,7 +274,10 @@ function renderSchedule() {
   });
 
   if (DATA.updated) {
-    $("updatedAt").textContent = "Live data last synced " + new Date(DATA.updated).toLocaleString();
+    const age = (now() - new Date(DATA.updated)) / 3600000;
+    let msg = "Live data last synced " + new Date(DATA.updated).toLocaleString();
+    if (DATA.sync_error || age > 24) msg += " ⚠️ ESPN sync is failing — times/scores may be stale.";
+    $("updatedAt").textContent = msg;
   }
 }
 
@@ -234,6 +295,9 @@ function labelDate(d) {
 function fmtTime(d) {
   return d.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" });
 }
+function fmtClock(d) {
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
 
 // --- share + install ---
 function wireButtons() {
@@ -241,7 +305,12 @@ function wireButtons() {
   shareBtn.addEventListener("click", async () => {
     const hg = nextHuskyGame();
     const d = hg ? daysUntil(parse(hg.kickoff)) : null;
-    const text = d != null
+    const rec = record();
+    const text = hg && isLive(hg)
+      ? `Dawgs are LIVE right now ${hg.home ? "vs" : "@"} ${hg.opponent} 🐺🔴 Get in here:`
+      : d != null && rec.played
+      ? `Huskies are ${rec.w}-${rec.l}. ${d} days until we ${hg.home ? "host" : "visit"} ${hg.opponent} 🐺 (still the last Pac-12 champs):`
+      : d != null
       ? `${d} days until Husky football 🐺 (and we're STILL the last Pac-12 champs). Get hyped:`
       : `Husky football season is here 🐺💜 Bow down:`;
     const url = location.origin;

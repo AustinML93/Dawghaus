@@ -27,10 +27,24 @@ No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
 
 ## ⚠️ Caching — read before debugging "my change isn't live"
 These each cost real time once. In order of how often they bite:
-1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=5`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
+1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=6`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
 2. **Service worker:** bump `CACHE = "dawghaus-vN"` in `web/sw.js` on every shell change. Clients need a full PWA close/reopen (sometimes twice).
 3. **`nginx.conf` is a single-file bind mount:** `git pull` swaps the inode, so a plain reload serves OLD config — `deploy.sh` uses `--force-recreate` to fix. Verify: `docker exec dawghaus-web grep -n 'location ~' /etc/nginx/conf.d/default.conf`.
 4. **LAN DNS via AdGuard Home** (`192.168.1.200`): after CF DNS changes it can hold a stale/negative cache for the whole LAN. `docker restart adguardhome` clears it (brief blip). Cellular bypasses it.
+
+## ESPN feed gotchas (cost us the whole preseason once)
+- **No custom User-Agent.** ESPN's Akamai edge 403s "DawgHaus/1.0" and even a spoofed Chrome
+  UA, but serves stock `Python-urllib`/`curl` UAs. `fetch_json` sends no UA on purpose.
+- **Match opponents by ESPN `team.location`/`abbreviation`**, not `displayName` (which
+  includes the mascot: "Washington State Cougars").
+- ESPN encodes "time TBD" as midnight **Eastern** (`T04:00Z`/`T05:00Z`) with `timeValid:false`.
+  Trust the ET date, not the time. Confirmed kickoffs are converted to Pacific and `date`
+  is rewritten from them (games get moved: Apple Cup 2026 shifted to Sunday; Iowa/Purdue
+  are Friday nights).
+- Sanity check: `docker logs dawghaus-updater` should show `ESPN returned 12 events`, and the
+  footer's "last synced" should be recent. The UI shows a ⚠️ if `sync_error` is set or data is >24h old.
+- The updater polls every `UPDATE_INTERVAL` (30 min) and drops to `LIVE_INTERVAL` (2 min)
+  from 1h before kickoff until final; the page re-fetches every 60s in that window.
 
 ## Other gotchas
 - `/data` is served via nginx `alias /srv/dawghaus-data/` (mounted OUTSIDE the web root). Do **not** reintroduce a mount nested under the read-only `./web` mount, and never `rm -rf web/data` in tests then `git add -A`.

@@ -166,6 +166,9 @@ main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding
 .sched-result { font-weight: 900; font-size: 1.05rem; }
 .sched-result.w { color: var(--win); }
 .sched-result.l { color: var(--danger); }
+.sched-result.live { color: var(--gold-bright); }
+.sched-result.live small { display: block; font-size: .65rem; color: var(--danger); font-weight: 800; letter-spacing: 1px; }
+.sched-card.is-live { border-color: var(--danger); animation: livepulse 1.4s ease-in-out infinite; }
 .sched-weather { font-size: .78rem; color: var(--gold); margin-top: 2px; }
 .bye-card { text-align: center; color: var(--muted); font-style: italic; padding: 10px; border: 1px dashed rgba(255,255,255,.15); border-radius: 14px; }
 
