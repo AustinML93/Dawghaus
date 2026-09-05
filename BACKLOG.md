@@ -9,11 +9,12 @@ post-game gloat/cope headline + share text (72h window), Oregon-week takeover (D
 all-duck trash talk, green tint), Duck Watch card (Oregon record/rank, "Oregon lost to X",
 Duck Fact of the Day from `web/js/ducks.js`), AP ranks, bowl auto-append with 🩸 BLOOD PACT line,
 bigger siren on gameday.
+Shipped 2026-09-04 (pass 2): **shared siren tap counter** (`api/siren.py`, stdlib, proxied at
+`/api/siren`, state in `data/siren.json`; badge on the FAB = today's pulls, season total on the
+Record card) and **shareable score card** (`web/js/sharecard.js`, canvas PNG → native share sheet,
+falls back to a long-press-to-save dialog). Slate now shows kickoff time on rivalry rows too.
 Still open:
-- **Shared siren tap counter** — needs a tiny backend (Worker or endpoint on the box). Parked
-  until Mike says go.
 - **Gameday "where are we watching"** line — needs a data source (manual field in schedule.json?).
-- **Shareable score card image** — canvas-render the Record card + gloat line for the group chat.
 
 - **Soundboard card** — a dedicated section holding Fight Song + Touchdown (and any
   future sounds) to declutter the top bar. *Parked 2026-06-24 in favor of a floating

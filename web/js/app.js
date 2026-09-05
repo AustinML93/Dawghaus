@@ -248,7 +248,10 @@ function renderRecordCard() {
     ? (rec.l === 0 ? "Zero losses. Zero chill." : rec.w > rec.l ? "Winning record. Act like you've been here." : "It's a rebuild. It's a vibe. It's fine.")
     : "Season's here. Bow down.";
   if (oreg && oreg.result) sub = oreg.result[0] === "W" ? "AND WE BEAT OREGON. Season complete, spiritually." : "Oregon happened. We don't talk about it.";
-  $("cfbSub").innerHTML = sub + (bowl ? `<span class="pact">🩸 BLOOD PACT ACTIVATED — vs ${bowl.opponent}</span>` : "");
+  const sc = SIREN.get();
+  $("cfbSub").innerHTML = sub
+    + (bowl ? `<span class="pact">🩸 BLOOD PACT ACTIVATED — vs ${bowl.opponent}</span>` : "")
+    + `<span class="pact" style="color:var(--gold)" id="sirenLine">${sc && sc.total ? `🚨 ${sc.total} siren pulls this season` : ""}</span>`;
 }
 
 function renderDuckWatch() {
@@ -380,7 +383,8 @@ function renderSchedule() {
     const badge = g.rivalry === "apple-cup" ? "🍎 " : g.rivalry === "oregon" ? "🦆 " : "";
     const time = g.timeConfirmed ? fmtTime(k) : "Time TBD";
     const metaBits = [
-      rival ? SNARK.opponentBurn(g.opponent) : time,
+      rival ? SNARK.opponentBurn(g.opponent) : "",
+      time,
       g.neutral ? "neutral site" : "",
       g.tv || "",
     ].filter(Boolean).join(" · ");
@@ -425,6 +429,65 @@ function fmtClock(d) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+// --- shared siren counter (POST /api/siren; see api/siren.py) ---
+const SIREN = (() => {
+  let counts = null, timer = null;
+  function paint(bump) {
+    const el = $("tdCount");
+    if (!counts || !counts.today) { el.hidden = true; return; }
+    el.textContent = counts.today > 999 ? "999+" : counts.today;
+    el.title = `${counts.today} siren pulls today · ${counts.total} all season`;
+    el.hidden = false;
+    if (bump) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+    const rc = $("sirenLine"); if (rc) rc.textContent = `🚨 ${counts.total} siren pulls this season`;
+  }
+  async function poll() {
+    try {
+      const r = await fetch("/api/siren", { cache: "no-store" });
+      if (r.ok) { counts = await r.json(); paint(false); }
+    } catch (_) {}
+    clearTimeout(timer);
+    const hg = DATA && nextHuskyGame();
+    const hot = hg && (isLive(hg) || daysUntil(parse(hg.kickoff)) === 0);
+    timer = setTimeout(poll, hot ? 20000 : 300000);
+  }
+  async function tap() {
+    if (counts) { counts.today++; counts.total++; paint(true); }  // optimistic
+    try {
+      const r = await fetch("/api/siren", { method: "POST" });
+      if (r.ok || r.status === 429) { counts = await r.json(); paint(false); }
+    } catch (_) {}
+  }
+  return { start: poll, tap, get: () => counts };
+})();
+
+// --- share card ---
+async function shareCard() {
+  if (!DATA || typeof SHARECARD === "undefined") return;
+  const btn = $("cardBtn"); const label = btn.textContent; btn.textContent = "🎨 Rendering…"; btn.disabled = true;
+  try {
+    const rec = record(); const D = ducks(); const fresh = freshResult(); const hg = nextHuskyGame();
+    const duck = DUCKDATA && DUCKDATA.record ? `Oregon: ${DUCKDATA.record.w}-${DUCKDATA.record.l}` : null;
+    let st;
+    if (fresh) {
+      const won = fresh.result[0] === "W";
+      st = { mode: "result", won, score: fresh.result.slice(2), opponent: fresh.opponent, home: fresh.home,
+             line: D ? (won ? D.gloat(fresh) : D.cope(fresh)) : "", text: `${won ? "DAWGS WIN" : "Dawgs lost"} ${fresh.result.slice(2)} ${fresh.home ? "vs" : "@"} ${fresh.opponent} 🐺` };
+    } else if (hg) {
+      const d = daysUntil(parse(hg.kickoff));
+      st = { mode: "countdown", days: Math.max(0, d), opponent: hg.opponent, home: hg.home,
+             when: hg.timeConfirmed ? fmtTime(parse(hg.kickoff)) + (hg.tv ? " · " + hg.tv : "") : "time TBD",
+             line: isDuckWeek(hg) && D ? D.oregonWeek(d) : SNARK.headline(d), text: `${d} days until Husky football 🐺` };
+    } else {
+      st = { mode: "countdown", days: 0, opponent: "next season", home: true, line: SNARK.flavor(), text: "Husky football 🐺" };
+    }
+    st.rank = DATA.rank; st.record = rec.played ? `${rec.w}-${rec.l}` : null; st.duckLine = duck; st.url = location.host;
+    const out = await SHARECARD.share(st);
+    if (out && out.url) { $("cardImg").src = out.url; $("cardDlg").showModal(); }
+  } catch (e) { console.warn("share card failed", e); }
+  btn.textContent = label; btn.disabled = false;
+}
+
 // --- share + install ---
 function wireButtons() {
   const shareBtn = $("shareBtn");
@@ -460,10 +523,15 @@ function wireButtons() {
   document.addEventListener("fightsong:started", () => { $("songBtn").textContent = "⏹ Stop"; });
   document.addEventListener("fightsong:stopped", () => { $("songBtn").textContent = "🎺 Fight Song"; });
 
-  // Touchdown siren (floating button, toggle)
+  // Touchdown siren (floating button, toggle) + shared tap counter
   $("tdBtn").addEventListener("click", () => TOUCHDOWN.play());
-  document.addEventListener("touchdown:started", () => $("tdBtn").classList.add("is-blasting"));
+  document.addEventListener("touchdown:started", () => { $("tdBtn").classList.add("is-blasting"); SIREN.tap(); });
   document.addEventListener("touchdown:stopped", () => $("tdBtn").classList.remove("is-blasting"));
+  SIREN.start();
+
+  // Share card
+  $("cardBtn").addEventListener("click", shareCard);
+  $("cardClose").addEventListener("click", () => $("cardDlg").close());
 
   // Trash talk
   const trashLine = () => {

@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="DawgHaus" />
   <link rel="icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/styles.css?v=7" />
+  <link rel="stylesheet" href="/css/styles.css?v=8" />
   <script>
     // Apply saved theme before paint to avoid a flash.
     try { var t = localStorage.getItem("dawghaus-theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}
@@ -57,6 +57,10 @@
         <div class="cd-sub" id="cfbSub">Loading…</div>
       </article>
     </section>
+
+    <div class="share-row">
+      <button id="cardBtn" class="card-btn">📸 Score card for the group chat</button>
+    </div>
 
     <section class="hype" aria-label="Hype meter" id="hypeCard">
       <div class="hype-head">
@@ -115,13 +119,20 @@
     <p class="tiny">Go Dawgs. 🐺💜</p>
   </footer>
 
-  <button id="tdBtn" class="td-fab" title="Touchdown siren!" aria-label="Touchdown siren">🚨</button>
+  <button id="tdBtn" class="td-fab" title="Touchdown siren!" aria-label="Touchdown siren">🚨<span class="td-count" id="tdCount" hidden></span></button>
 
-  <script src="/js/snark.js?v=7"></script>
-  <script src="/js/trashtalk.js?v=7"></script>
-  <script src="/js/ducks.js?v=7"></script>
-  <script src="/js/fightsong.js?v=7"></script>
-  <script src="/js/touchdown.js?v=7"></script>
-  <script src="/js/app.js?v=7"></script>
+  <dialog id="cardDlg" class="card-dlg">
+    <img id="cardImg" alt="DawgHaus share card" />
+    <p class="card-hint">Long-press (or right-click) the image to save it, then drop it in the chat.</p>
+    <button id="cardClose" class="ghost-btn">Close</button>
+  </dialog>
+
+  <script src="/js/snark.js?v=8"></script>
+  <script src="/js/trashtalk.js?v=8"></script>
+  <script src="/js/ducks.js?v=8"></script>
+  <script src="/js/sharecard.js?v=8"></script>
+  <script src="/js/fightsong.js?v=8"></script>
+  <script src="/js/touchdown.js?v=8"></script>
+  <script src="/js/app.js?v=8"></script>
 </body>
 </html>

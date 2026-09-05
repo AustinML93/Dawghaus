@@ -12,6 +12,19 @@ services:
       - ./data:/srv/dawghaus-data:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
+  # Siren tap counter — the one stateful endpoint. nginx proxies /api/ -> here.
+  api:
+    image: python:3.12-alpine
+    container_name: dawghaus-api
+    restart: unless-stopped
+    working_dir: /app
+    command: ["python", "siren.py"]
+    environment:
+      - DATA_DIR=/data
+    volumes:
+      - ./api:/app:ro
+      - ./data:/data
+
   updater:
     image: python:3.12-alpine
     container_name: dawghaus-updater
