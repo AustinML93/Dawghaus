@@ -43,6 +43,10 @@ services:
       - UPDATE_INTERVAL=1800    # 30 min in-season; updater self-drops to LIVE_INTERVAL during games
       - LIVE_INTERVAL=120
       - DATA_DIR=/data
+      # Liveness: ntfy on OMV (topic omv-alerts, same as Harbor/watchdog). Alert once
+      # when the last good ESPN sync is older than STALE_ALERT_HOURS, once on recovery.
+      - NTFY_URL=http://192.168.1.200:9020/omv-alerts
+      - STALE_ALERT_HOURS=6
     volumes:
       - ./updater:/app:ro
       - ./data:/data            # shared with web (read-only there)

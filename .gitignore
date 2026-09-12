@@ -8,3 +8,4 @@ data/weather.json.tmp
 web/audio/fight-song.mp3
 web/audio/touchdown.mp3
 __pycache__/
+data/notify.json

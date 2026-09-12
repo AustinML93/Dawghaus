@@ -399,6 +399,85 @@ def fetch_oregon():
     }
 
 
+# --- liveness notification (ntfy) ---------------------------------------------
+# The ESPN sync was silently 403ing for the whole 2026 preseason; the UI's ⚠️ only
+# helps if someone opens the page. Post to ntfy once when the last GOOD sync is
+# older than STALE_ALERT_HOURS, and once more when it recovers. Disabled unless
+# NTFY_URL is set. `python update.py --test-notify` sends a test message.
+NTFY_URL = os.environ.get("NTFY_URL", "").strip()
+STALE_ALERT_HOURS = float(os.environ.get("STALE_ALERT_HOURS", "6"))
+NOTIFY_STATE = os.path.join(DATA_DIR, "notify.json")
+
+
+def ntfy_post(url, title, body, priority="high", tags="rotating_light"):
+    req = urllib.request.Request(url, data=body.encode(), method="POST", headers={
+        "Title": title, "Priority": priority, "Tags": tags, "Content-Type": "text/plain"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return r.status
+
+
+class Notifier:
+    """Stateful stale/recovered alerting. `post` and `clock` are injectable for tests."""
+
+    def __init__(self, url=NTFY_URL, hours=STALE_ALERT_HOURS, state_path=NOTIFY_STATE,
+                 post=ntfy_post, clock=None):
+        self.url, self.hours, self.state_path = url, hours, state_path
+        self.post, self.clock = post, (clock or (lambda: datetime.now(timezone.utc)))
+        self.state = {"alerted": False, "alerted_at": None}
+        try:
+            self.state.update(json.load(open(state_path)))
+        except (OSError, ValueError):
+            pass
+
+    def _save(self):
+        try:
+            write_atomic(self.state_path, self.state)
+        except OSError as e:
+            log("notify state not saved:", e)
+
+    def _send(self, title, body, **kw):
+        if not self.url:
+            return False
+        try:
+            self.post(self.url, title, body, **kw)
+            log("ntfy sent:", title)
+            return True
+        except Exception as e:  # noqa: BLE001 — alerting must never break the loop
+            log("ntfy send failed:", e)
+            return False
+
+    def check(self, sched):
+        """Call after every cycle with the schedule as written."""
+        if not self.url or not sched or not sched.get("updated"):
+            return
+        try:
+            last_ok = datetime.fromisoformat(sched["updated"])
+        except ValueError:
+            return
+        age_h = (self.clock() - last_ok).total_seconds() / 3600
+        stale = age_h >= self.hours
+        if stale and not self.state["alerted"]:
+            err = sched.get("sync_error") or "no error recorded (updater may have been down)"
+            if self._send("🐺 DawgHaus: ESPN sync is stale",
+                          f"No good sync for {age_h:.0f}h (last {last_ok:%Y-%m-%d %H:%M} UTC).\n"
+                          f"Last error: {err}\nScores/kickoffs on the site may be wrong."):
+                self.state = {"alerted": True, "alerted_at": self.clock().isoformat()}
+                self._save()
+        elif not stale and self.state["alerted"]:
+            if self._send("✅ DawgHaus: ESPN sync recovered",
+                          f"Synced {age_h * 60:.0f} min ago. Back to normal.",
+                          priority="default", tags="white_check_mark"):
+                self.state = {"alerted": False, "alerted_at": None}
+                self._save()
+
+    def test(self):
+        if not self.url:
+            log("NTFY_URL not set; nothing to test"); return False
+        return self._send("🐺 DawgHaus: test notification",
+                          "If you can read this, stale-sync alerts will reach you.",
+                          priority="default", tags="dog")
+
+
 def write_atomic(path, obj):
     tmp = path + ".tmp"
     json.dump(obj, open(tmp, "w"), indent=2)
@@ -425,8 +504,12 @@ def run_once(with_weather=True):
 
 
 if __name__ == "__main__":
+    if "--test-notify" in sys.argv:
+        sys.exit(0 if Notifier().test() else 1)
     if not os.path.exists(SCHEDULE):
         log("FATAL: seed schedule not found at", SCHEDULE); sys.exit(1)
+    notifier = Notifier()
+    log("ntfy alerts " + (f"on (stale after {STALE_ALERT_HOURS:g}h)" if NTFY_URL else "off (NTFY_URL not set)"))
     last_wx = 0.0
     while True:
         hot = False
@@ -436,8 +519,13 @@ if __name__ == "__main__":
             sched = run_once(with_weather=do_wx)
             if do_wx: last_wx = time.time()
             hot = game_is_hot(sched)
+            notifier.check(sched)
         except Exception as e:  # noqa: BLE001 — never let the loop die
             log("update cycle error:", e)
+            try:
+                notifier.check(json.load(open(SCHEDULE)))
+            except Exception:  # noqa: BLE001
+                pass
         nap = LIVE_INTERVAL if hot else INTERVAL
         log(f"sleeping {nap}s" + (" (GAME ON 🔴)" if hot else ""))
         time.sleep(nap)

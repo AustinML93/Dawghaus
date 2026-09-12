@@ -55,6 +55,12 @@ These each cost real time once. In order of how often they bite:
   footer's "last synced" should be recent. The UI shows a ⚠️ if `sync_error` is set or data is >24h old.
 - The updater polls every `UPDATE_INTERVAL` (30 min) and drops to `LIVE_INTERVAL` (2 min)
   from 1h before kickoff until final; the page re-fetches every 60s in that window.
+- **Live scores come from the summary endpoint** (`summary?event=ID`): the team schedule
+  endpoint returns `score: null` while a game is in progress (seen 2026-09-12).
+- **Liveness alert:** the updater posts to ntfy (`NTFY_URL`, OMV topic `omv-alerts`) once
+  when the last good sync is older than `STALE_ALERT_HOURS` (6) and once on recovery;
+  state in `data/notify.json`. Test delivery: `docker exec dawghaus-updater python update.py --test-notify`.
+  A dead updater container is Harbor's container-down alert, not this.
 
 ## Other gotchas
 - `/data` is served via nginx `alias /srv/dawghaus-data/` (mounted OUTSIDE the web root). Do **not** reintroduce a mount nested under the read-only `./web` mount, and never `rm -rf web/data` in tests then `git add -A`.

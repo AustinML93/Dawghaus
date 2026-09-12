@@ -1,6 +1,7 @@
 """Stdlib unit tests for the updater. Run: python3 -m unittest updater/test_update.py"""
-import unittest
-from update import current_rank, fetch_live_summary
+import os, tempfile, unittest
+from datetime import datetime, timedelta, timezone
+from update import current_rank, fetch_live_summary, Notifier
 
 
 def ev(date, status, rank):
@@ -43,6 +44,49 @@ class LiveSummaryTest(unittest.TestCase):
     def test_fetch_error_returns_none(self):
         def boom(url): raise OSError("403")
         self.assertIsNone(fetch_live_summary("x", 264, fetch=boom))
+
+
+class NotifierTest(unittest.TestCase):
+    T0 = datetime(2026, 9, 12, 12, 0, tzinfo=timezone.utc)
+
+    def make(self):
+        sent = []
+        self.now = self.T0
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json"); tmp.close(); os.unlink(tmp.name)
+        n = Notifier(url="http://ntfy/test", hours=6, state_path=tmp.name,
+                     post=lambda url, title, body, **kw: sent.append(title), clock=lambda: self.now)
+        return n, sent, tmp.name
+
+    def sched(self, hours_ago, err=None):
+        d = {"updated": (self.now - timedelta(hours=hours_ago)).isoformat()}
+        if err: d["sync_error"] = err
+        return d
+
+    def test_fresh_data_is_quiet(self):
+        n, sent, _ = self.make()
+        n.check(self.sched(1)); self.assertEqual(sent, [])
+
+    def test_alerts_once_then_recovers_once(self):
+        n, sent, path = self.make()
+        n.check(self.sched(7, "403")); n.check(self.sched(8, "403"))
+        self.assertEqual(len(sent), 1); self.assertIn("stale", sent[0])
+        # state survives a restart
+        n2 = Notifier(url="http://ntfy/test", hours=6, state_path=path,
+                      post=lambda url, title, body, **kw: sent.append(title), clock=lambda: self.now)
+        n2.check(self.sched(9, "403")); self.assertEqual(len(sent), 1)
+        n2.check(self.sched(0)); n2.check(self.sched(0))
+        self.assertEqual(len(sent), 2); self.assertIn("recovered", sent[1])
+
+    def test_send_failure_retries_next_cycle(self):
+        n, sent, _ = self.make()
+        def boom(url, title, body, **kw): raise OSError("down")
+        n.post = boom; n.check(self.sched(7)); self.assertFalse(n.state["alerted"])
+        n.post = lambda url, title, body, **kw: sent.append(title)
+        n.check(self.sched(7)); self.assertEqual(len(sent), 1)
+
+    def test_disabled_without_url(self):
+        n, sent, _ = self.make(); n.url = ""
+        n.check(self.sched(48)); self.assertEqual(sent, [])
 
 
 if __name__ == "__main__":
