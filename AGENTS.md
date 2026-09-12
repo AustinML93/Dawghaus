@@ -4,9 +4,9 @@
 ## Current handoff
 _Rewritten in place at every close-out; history lives in git._
 
-- **Last updated:** 2026-09-12
-- **Landed:** AGENTS.md made canonical (first time committed) with the ESPN gotchas; CLAUDE.md = `.md`; stale Opus 4.8 trailer instruction generalized.
-- **Verified live:** nothing — docs-only session.
+- **Last updated:** 2026-09-12 (second session, from the OMV project)
+- **Landed:** `9335d83` — `wud.watch=false` labels on `api` and `updater` in `docker-compose.yml`, so WUD on OMV stops flagging the pinned `python:3.12-alpine` base as an update. Pushed and deployed via `./deploy.sh` on the server checkout.
+- **Verified live:** all three containers recreated and running with the labels; `http://127.0.0.1:1889` and `https://dawghaus.austinmlapps.com` both 200; WUD rescan clean (web stays watched — it's a real `nginx:alpine`).
 - **Next session — pick from:** BACKLOG.md housekeeping: wire the >24h stale-data ⚠️ to a notification.
 
 A snarky, Husky-themed PWA: countdowns to the first college football game and the first
