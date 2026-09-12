@@ -171,9 +171,12 @@ function tick() {
     const d = daysUntil(k);
     const live = isLive(hg);
     const sc = live ? liveScore(hg) : null;
-    $("huskyDays").textContent = live ? (sc ? `${hg.live.us}–${hg.live.them}` : "0") : (d >= 0 ? d : "0");
-    $("huskyUnit").textContent = live ? (sc ? sc.clock || "LIVE" : "LIVE") : "days";
-    $("huskyClock").textContent = live ? (sc ? sc.line : "LIVE NOW 🔴") : clockUntil(k);
+    // Live with no score yet: say LIVE, not "0" (which reads like a score).
+    $("huskyDays").textContent = live ? (sc ? `${hg.live.us}–${hg.live.them}` : "LIVE") : (d >= 0 ? d : "0");
+    $("huskyUnit").textContent = live ? (sc ? sc.clock || "LIVE" : "score update pending") : "days";
+    // TBD kickoff: the seed carries a placeholder time, so count down to the DATE only.
+    $("huskyClock").textContent = live ? (sc ? sc.line : "LIVE NOW 🔴")
+      : hg.timeConfirmed ? clockUntil(k) : `${fmtDay(k)} · kickoff TBD`;
     const tbd = hg.timeConfirmed ? "" : " (time TBD)";
     const tv = hg.tv ? ` · ${hg.tv}` : "";
     $("huskySub").textContent = `${hg.home ? "vs" : "@"} ${hg.opponent}${tbd}${live ? " 🔴" : (hg.timeConfirmed ? " · " + fmtTime(k) : "")}${tv}`;
@@ -222,7 +225,7 @@ function tick() {
     const k = parse(el.getAttribute("data-cd"));
     const d = daysUntil(k);
     if (d > 0) el.innerHTML = d + '<small>days</small>';
-    else if (d === 0) el.innerHTML = 'TODAY<small>' + fmtClock(k) + '</small>';
+    else if (d === 0) el.innerHTML = 'TODAY<small>' + (el.hasAttribute("data-tbd") ? "time TBD" : fmtClock(k)) + '</small>';
   });
 }
 
@@ -379,7 +382,7 @@ function renderSchedule() {
       : past ? `<div class="sched-result">FINAL</div>`
       : sc ? `<div class="sched-result live">${g.live.us}–${g.live.them}<small>${sc.clock || "LIVE"}</small></div>`
       : live ? `<div class="sched-result live">LIVE</div>`
-      : `<div class="sched-cd" data-cd="${g.kickoff || g.date}">—</div>`;
+      : `<div class="sched-cd" data-cd="${g.kickoff || g.date}"${g.timeConfirmed ? "" : ' data-tbd="1"'}>—</div>`;
 
     const wx = weatherFor(g);
     const badge = g.rivalry === "apple-cup" ? "🍎 " : g.rivalry === "oregon" ? "🦆 " : "";
@@ -426,6 +429,9 @@ function labelDate(d) {
 }
 function fmtTime(d) {
   return d.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" });
+}
+function fmtDay(d) {
+  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 function fmtClock(d) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -499,9 +505,16 @@ const WATCH = (() => {
       row.append(name, cnt, bar); tally.appendChild(row);
     });
     const total = ranked.reduce((a, [, n]) => a + n, 0);
+    const tied = ranked.filter(([, n]) => n === max).map(([s]) => s);
     $("watchLead").textContent = !total ? "Nobody's committed. Cowards. Tap a spot."
-      : ranked.length > 1 && ranked[0][1] === ranked[1][1] ? `Deadlock between ${ranked[0][0]} and ${ranked[1][0]}. Somebody break it.`
-      : `Consensus: ${ranked[0][0]} (${ranked[0][1]} of ${total}). Be there.`;
+      : tied.length > 1 ? `Deadlock: ${tied.join(" vs ")}. Somebody break it.`
+      : ranked.length === 1 && total > 1 ? `Unanimous: ${ranked[0][0]} (${total} of ${total}). Be there.`
+      : `Leading: ${ranked[0][0]} (${ranked[0][1]} of ${total}). Not settled yet.`;
+  }
+  let msgTimer = null;
+  function say(text, bad) {
+    const el = $("watchMsg"); el.textContent = text; el.classList.toggle("bad", !!bad); el.hidden = !text;
+    clearTimeout(msgTimer); if (text) msgTimer = setTimeout(() => { el.hidden = true; }, bad ? 6000 : 2500);
   }
   async function refresh() {
     const hg = DATA && nextHuskyGame();
@@ -519,10 +532,23 @@ const WATCH = (() => {
     spot = (spot || "").slice(0, 40);
     try {
       const r = await fetch("/api/watch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ game, voter: voterId(), spot }) });
-      if (r.ok) { votes = (await r.json()).votes || {}; mine = spot || null; try { spot ? localStorage.setItem(myKey(), spot) : localStorage.removeItem(myKey()); } catch (_) {} paint(); }
-    } catch (_) {}
+      let body = null; try { body = await r.json(); } catch (_) {}
+      if (r.ok) {
+        votes = (body && body.votes) || {}; mine = spot || null;
+        try { spot ? localStorage.setItem(myKey(), spot) : localStorage.removeItem(myKey()); } catch (_) {}
+        paint(); say(spot ? "✅ Vote saved." : "Vote cleared.");
+      } else {
+        if (body && body.votes) { votes = body.votes; paint(); }
+        say(r.status === 429 ? "⏳ Easy. Rate limited — try again in a minute." : "❌ Vote didn't save. Try again.", true);
+      }
+    } catch (_) { say("❌ Vote didn't save (offline?). Try again.", true); }
   }
-  return { refresh, leader: () => { const r = Object.entries(votes).sort((a, b) => b[1] - a[1])[0]; return r ? r[0] : null; } };
+  // Leader only when one spot is clearly ahead; null on a tie so the share card doesn't pick a side.
+  function leader() {
+    const r = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+    return r.length && !(r[1] && r[1][1] === r[0][1]) ? r[0][0] : null;
+  }
+  return { refresh, leader };
 })();
 
 // --- share card ---

@@ -1,16 +1,16 @@
 /* DawgHaus service worker — offline-first shell, fresh data. */
-const CACHE = "dawghaus-v9";
+const CACHE = "dawghaus-v10";
 const SHELL = [
   "/",
   "/index.html",
-  "/css/styles.css?v=9",
-  "/js/app.js?v=9",
-  "/js/snark.js?v=9",
-  "/js/trashtalk.js?v=9",
-  "/js/ducks.js?v=9",
-  "/js/sharecard.js?v=9",
-  "/js/fightsong.js?v=9",
-  "/js/touchdown.js?v=9",
+  "/css/styles.css?v=10",
+  "/js/app.js?v=10",
+  "/js/snark.js?v=10",
+  "/js/trashtalk.js?v=10",
+  "/js/ducks.js?v=10",
+  "/js/sharecard.js?v=10",
+  "/js/fightsong.js?v=10",
+  "/js/touchdown.js?v=10",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -34,6 +34,10 @@ self.addEventListener("fetch", (e) => {
   // Audio: never intercept — let the browser stream it natively (range requests
   // / 206 responses can't be cached and break audio playback through the SW).
   if (url.pathname.startsWith("/audio/")) return;
+
+  // API: never cache. Siren counts and watch votes are live state — the
+  // cache-first shell path below would freeze the first response forever.
+  if (url.pathname.startsWith("/api/")) return;
 
   // Data: network-first, fall back to cache (so countdowns keep working offline).
   if (url.pathname.startsWith("/data/")) {

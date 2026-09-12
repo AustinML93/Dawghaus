@@ -308,3 +308,5 @@ body.gameday .td-fab { transform: scale(1.25); transform-origin: bottom right; a
 .tally-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); }
 .tally-row.lead .tally-name { color: var(--gold-bright); font-weight: 800; }
 .watch-lead { margin: 10px 0 0; font-size: .9rem; color: var(--gold-bright); font-weight: 700; text-align: center; }
+.watch-msg { margin: 6px 0 0; font-size: .8rem; color: var(--muted); text-align: center; }
+.watch-msg.bad { color: #ff7a7a; font-weight: 700; }

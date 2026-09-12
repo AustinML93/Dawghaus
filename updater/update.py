@@ -97,11 +97,15 @@ def get_rank(competitor):
 
 def current_rank(events):
     """ESPN stamps each event with the rank AT THAT TIME, so the opener would
-    freeze the preseason rank all year. Use the next unplayed game (which carries
-    the current poll), falling back to the most recent game."""
+    freeze the preseason rank all year. The next unplayed game carries the
+    current poll, and "unranked" there is a real answer (we dropped out) — do
+    NOT fall back to an older ranked game in that case. Only when the season
+    is over (no upcoming game) use the most recent game's rank."""
     ordered = sorted(events, key=lambda e: (e["date"], e["kickoff"] or ""))
     upcoming = [e for e in ordered if e.get("status") != "post"]
-    for e in (upcoming[:1] + ordered[::-1]):
+    if upcoming:
+        return upcoming[0].get("rank")
+    for e in ordered[::-1]:
         if e.get("rank") is not None:
             return e["rank"]
     return None
