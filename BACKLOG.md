@@ -13,11 +13,7 @@ features that live in the during-game or post-game moment. No logins, minimal st
    Trivial once the lines exist.
 3. **Crew quote bank** — seed the crew's actual lines into the trash-talk generator.
    *Blocked on Mike sending the lines.*
-4. **Liveness notification** — the ESPN sync was silently 403ing for the whole 2026
-   preseason. The UI now shows ⚠️ on the hero card when data is >24h old or `sync_error`
-   is set; wire that same condition to a notification (ntfy/Telegram) so it is noticed
-   without opening the page.
-5. **Postgame mood tint** — the 72h gloat/cope window already changes the headline and
+4. **Postgame mood tint** — the 72h gloat/cope window already changes the headline and
    share text; add a subtle win/loss body tint so the mood is visible at a glance
    (like the Oregon-week green and the gameday class).
 
@@ -31,6 +27,8 @@ features that live in the during-game or post-game moment. No logins, minimal st
   only if we add more sounds.
 
 ## Shipped (so nobody re-proposes it)
+- 2026-09-12 (evening): live scores via the ESPN summary endpoint (schedule feed is null
+  in-game); **liveness alert** to ntfy `omv-alerts` when the sync is stale >6h, plus recovery.
 - 2026-09-12: Codex review fixes (API bypasses the SW cache, LIVE instead of "0", date-only
   TBD countdowns, honest rank fallback, Leading/Deadlock vote lines with save feedback);
   freshness stamp on the hero card; folded earlier results in the slate.

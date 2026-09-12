@@ -4,10 +4,16 @@
 ## Current handoff
 _Rewritten in place at every close-out; history lives in git._
 
-- **Last updated:** 2026-09-12 (second session, from the OMV project)
-- **Landed:** `9335d83` — `wud.watch=false` labels on `api` and `updater` in `docker-compose.yml`, so WUD on OMV stops flagging the pinned `python:3.12-alpine` base as an update. Pushed and deployed via `./deploy.sh` on the server checkout.
-- **Verified live:** all three containers recreated and running with the labels; `http://127.0.0.1:1889` and `https://dawghaus.austinmlapps.com` both 200; WUD rescan clean (web stays watched — it's a real `nginx:alpine`).
-- **Next session — pick from:** BACKLOG.md housekeeping: wire the >24h stale-data ⚠️ to a notification.
+- **Last updated:** 2026-09-12 (evening, during the Utah State game)
+- **Landed (all pushed and deployed via `./deploy.sh`):**
+  - `5cbade4` — five Codex review fixes: `/api/` bypasses the SW cache (votes/siren were freezing), LIVE instead of a giant "0" with no score, date-only countdown for TBD kickoffs, honest rank fallback (`current_rank`), "Leading"/"Deadlock" vote lines + save/error feedback.
+  - `2c72313` — freshness stamp on the hero card (stale ⚠️ promoted there), folded earlier results in the slate, BACKLOG.md rewritten.
+  - `41b7d8d` — **live scores from the ESPN summary endpoint**; the schedule feed is `score: null` in-game. Found live during the game.
+  - `3de83c0` + `a218794` — **liveness alert to ntfy** (`omv-alerts`, stale after 6h, once per outage + recovery, `--test-notify`). Titles must be latin-1 (first live test failed on an emoji).
+- **Tests:** `cd updater && python3 -m unittest test_update` — 12 passing (first tests in the repo).
+- **Verified live:** score card showed UW 10–7 Utah State at halftime; test ntfy message landed on the topic; site 200 locally and publicly on shell `?v=11`.
+- **Gotcha noted:** `deploy.sh` stashes the live `data/schedule.json` back to the seed; the updater re-merges within one cycle (2 min in-game). Don't deploy at kickoff.
+- **Next session — pick from (see BACKLOG.md):** "Who's actually coming?" (In/Maybe/Couch + meetup time on the watch card) is next up. Score predictions are **held** (Mike, 2026-09-12). Cope button / crew quotes wait on Mike's lines.
 
 A snarky, Husky-themed PWA: countdowns to the first college football game and the first
 UW Husky game, the full 2026 schedule (live-updating), a hype meter, gameday weather, a
