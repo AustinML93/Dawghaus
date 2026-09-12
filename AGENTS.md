@@ -1,0 +1,65 @@
+<!-- Canonical agent doc for this repo. CLAUDE.md contains only `@AGENTS.md`. Edit this file only. -->
+# DawgHaus 🐺 — project notes for agents (Claude Code, Codex)
+
+## Current handoff
+_Rewritten in place at every close-out; history lives in git._
+
+- **Last updated:** 2026-09-12
+- **Landed:** AGENTS.md made canonical (first time committed) with the ESPN gotchas; CLAUDE.md = `.md`; stale Opus 4.8 trailer instruction generalized.
+- **Verified live:** nothing — docs-only session.
+- **Next session — pick from:** BACKLOG.md housekeeping: wire the >24h stale-data ⚠️ to a notification.
+
+A snarky, Husky-themed PWA: countdowns to the first college football game and the first
+UW Husky game, the full 2026 schedule (live-updating), a hype meter, gameday weather, a
+trash-talk generator, fight-song + touchdown-siren buttons, and a permanent "Forever
+Pac-12 Champions" banner. Self-hosted on OMV, behind a Cloudflare tunnel.
+
+Working name **DawgHaus**; public-name idea is *Purple Reign*.
+
+## Voice / design intent
+- **Full-degenerate snark**, relentless **Oregon shade** (the breakout feature — lean in).
+- Husky purple (`#4B2E83`) + gold (`#B7A57A`). Light + dark themes.
+- Forever Pac-12 Champions (2023, the last one ever) is a permanent bit.
+
+## Stack & layout
+No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
+- `web/` — the PWA: `index.html`, `css/styles.css`, `js/{app,snark,trashtalk,fightsong,touchdown}.js`, `sw.js`, `manifest.webmanifest`, `icons/`, `audio/`.
+- `data/schedule.json` — hand-seeded 2026 schedule; the updater merges live data onto it.
+- `updater/update.py` — stdlib-only; pulls ESPN (team **264**) for kickoff/TV/scores and Open-Meteo for home-game weather. No API keys. Runs on a loop (`UPDATE_INTERVAL`, default 6h; drop to 1800 once the season's near).
+- `api/server.py` — stdlib HTTP server, the ONLY stateful piece: shared siren tap counter at `/api/siren` (GET/POST, `data/siren.json`) and where-we-watching votes at `/api/watch` (GET `?game=`, POST `{game,voter,spot}`, `data/watch.json`, one vote per voter id per game). Light per-IP rate limit. Spot names are user text: render with textContent only. nginx proxies `/api/` → `api:8080` (lazy Docker-DNS resolve so nginx boots even if api is slow).
+- `docker-compose.yml` (web=nginx, api=python, updater=python), `nginx.conf`, `deploy.sh`, `BACKLOG.md`.
+
+## Deploy
+- GitHub: **https://github.com/AustinML93/Dawghaus** (public). `gh` is authed as AustinML93; commits authored as Mike Larsen. End commit messages with `Co-Authored-By: <the model that did the work> <noreply@anthropic.com> (the harness supplies the exact trailer)`.
+- OMV: `deploy@192.168.1.200`, cloned at `/srv/dev-disk-by-uuid-5c291e74-2a76-4eb0-924b-7bf8f9eca72c/compose/dawghaus`.
+- Ship: commit + push, then on the box `./deploy.sh` (stash → pull → pull images → **up -d --force-recreate**).
+- **Port 1889** (UW's first-ever game). Cloudflare tunnel (dashboard-managed) routes `dawghaus.austinmlapps.com` → `http://localhost:1889`. Mike owns tunnel/DNS changes.
+
+## ⚠️ Caching — read before debugging "my change isn't live"
+These each cost real time once. In order of how often they bite:
+1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=9`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
+2. **Service worker:** bump `CACHE = "dawghaus-vN"` in `web/sw.js` on every shell change. Clients need a full PWA close/reopen (sometimes twice).
+3. **`nginx.conf` is a single-file bind mount:** `git pull` swaps the inode, so a plain reload serves OLD config — `deploy.sh` uses `--force-recreate` to fix. Verify: `docker exec dawghaus-web grep -n 'location ~' /etc/nginx/conf.d/default.conf`.
+4. **LAN DNS via AdGuard Home** (`192.168.1.200`): after CF DNS changes it can hold a stale/negative cache for the whole LAN. `docker restart adguardhome` clears it (brief blip). Cellular bypasses it.
+
+## ESPN feed gotchas (cost us the whole preseason once)
+- **No custom User-Agent.** ESPN's Akamai edge 403s "DawgHaus/1.0" and even a spoofed Chrome
+  UA, but serves stock `Python-urllib`/`curl` UAs. `fetch_json` sends no UA on purpose.
+- **Match opponents by ESPN `team.location`/`abbreviation`**, not `displayName` (which
+  includes the mascot: "Washington State Cougars").
+- ESPN encodes "time TBD" as midnight **Eastern** (`T04:00Z`/`T05:00Z`) with `timeValid:false`.
+  Trust the ET date, not the time. Confirmed kickoffs are converted to Pacific and `date`
+  is rewritten from them (games get moved: Apple Cup 2026 shifted to Sunday; Iowa/Purdue
+  are Friday nights).
+- Sanity check: `docker logs dawghaus-updater` should show `ESPN returned 12 events`, and the
+  footer's "last synced" should be recent. The UI shows a ⚠️ if `sync_error` is set or data is >24h old.
+- The updater polls every `UPDATE_INTERVAL` (30 min) and drops to `LIVE_INTERVAL` (2 min)
+  from 1h before kickoff until final; the page re-fetches every 60s in that window.
+
+## Other gotchas
+- `/data` is served via nginx `alias /srv/dawghaus-data/` (mounted OUTSIDE the web root). Do **not** reintroduce a mount nested under the read-only `./web` mount, and never `rm -rf web/data` in tests then `git add -A`.
+- Audio (`web/audio/{fight-song,touchdown}.mp3`) is git-ignored (user-supplied). Both buttons are toggles and fall back to a synthesized sound if the file is missing. Audio must start **synchronously inside the click** (iOS autoplay rule) — no `await` before `.play()`.
+- Local screenshot testing: serve `web/` and temporarily put `schedule.json` under `web/data/` (the live site uses the alias). Headless Chrome `--screenshot` clips to the viewport; `position:fixed` FAB sits at the bottom edge.
+
+## Backlog
+See `BACKLOG.md` (soundboard, score-prediction poll, shareable countdown image, crew-specific trash talk, **road-trip game planner**: voting / travel advice / tickets / bucket-list stadiums).

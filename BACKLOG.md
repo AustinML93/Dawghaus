@@ -1,5 +1,7 @@
 # DawgHaus — Backlog / Ideas
 
+_Repo-scoped backlog. Cross-cutting family and homelab initiatives live in `~/Developer/Projects/agent-backlog/projects/`; see `~/Developer/Projects/CLAUDE.md` for the split._
+
 Parking lot for things we've discussed but haven't built.
 
 ## In-season mode (proposed 2026-09-04, season just started)
@@ -35,3 +37,6 @@ Still open: nothing big. Ideas: crew inside-joke trash talk (waiting on lines fr
   - **Ticket search** — deep links to tickets for each away game.
   - **Bucket-list stadiums** — flag marquee venues (the Big Ten cathedrals — Penn State night
     game, etc.), track which ones we've already crossed off.
+
+## Housekeeping (added 2026-09-12 process audit)
+- Liveness signal: the ESPN sync was silently 403ing for the whole 2026 preseason. The UI shows ⚠️ when data is >24h old; wire that same condition to a notification (ntfy/Telegram) so it is noticed without opening the page.
