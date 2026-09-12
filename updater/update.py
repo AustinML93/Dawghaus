@@ -111,6 +111,30 @@ def current_rank(events):
     return None
 
 
+ESPN_SUMMARY = ("https://site.api.espn.com/apis/site/v2/sports/football/"
+                "college-football/summary?event={id}")
+
+
+def fetch_live_summary(event_id, team_id, fetch=None):
+    """Scores for an in-progress game from the summary endpoint (the schedule
+    endpoint has none until final). Returns {us, them, status} or None."""
+    if not event_id:
+        return None
+    try:
+        data = (fetch or fetch_json)(ESPN_SUMMARY.format(id=event_id))
+        comp = (((data.get("header") or {}).get("competitions")) or [{}])[0]
+        comps = comp.get("competitors") or []
+        us = next((c for c in comps if str(c.get("id")) == str(team_id)), None)
+        them = next((c for c in comps if c is not us), None)
+        u, t = score_val(us or {}), score_val(them or {})
+        if u is None or t is None:
+            return None
+        return {"us": u, "them": t, "status": comp.get("status") or {}}
+    except Exception as e:  # never let a live-score miss break the merge
+        log(f"  summary fetch failed for event {event_id}: {e}")
+        return None
+
+
 def parse_event(ev, team_id=TEAM_ID):
     """Pull the bits we care about from one ESPN event, from team_id's POV."""
     comp = (ev.get("competitions") or [{}])[0]
@@ -168,6 +192,15 @@ def parse_event(ev, team_id=TEAM_ID):
     state = stype.get("state") or "pre"
     out["status"] = "post" if stype.get("completed") else state
     u, t = (score_val(us) if us else None), score_val(them)
+    if out["status"] == "in" and (u is None or t is None):
+        # ⚠️ The team schedule endpoint returns score: null while a game is IN
+        # PROGRESS (seen 2026-09-12 vs Utah State, 85 minutes in). The event
+        # summary endpoint has the live score, so pull it from there.
+        live = fetch_live_summary(ev.get("id"), team_id)
+        if live:
+            u, t = live["us"], live["them"]
+            st = live["status"] or st
+            stype = st.get("type") or stype
     if out["status"] == "in" and u is not None and t is not None:
         out["live"] = {
             "us": u, "them": t,
