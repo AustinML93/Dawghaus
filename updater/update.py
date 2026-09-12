@@ -410,6 +410,8 @@ NOTIFY_STATE = os.path.join(DATA_DIR, "notify.json")
 
 
 def ntfy_post(url, title, body, priority="high", tags="rotating_light"):
+    # HTTP headers are latin-1: no emoji in Title. ntfy renders `tags` as emoji instead.
+    title = title.encode("ascii", "ignore").decode()
     req = urllib.request.Request(url, data=body.encode(), method="POST", headers={
         "Title": title, "Priority": priority, "Tags": tags, "Content-Type": "text/plain"})
     with urllib.request.urlopen(req, timeout=10) as r:
@@ -458,13 +460,13 @@ class Notifier:
         stale = age_h >= self.hours
         if stale and not self.state["alerted"]:
             err = sched.get("sync_error") or "no error recorded (updater may have been down)"
-            if self._send("🐺 DawgHaus: ESPN sync is stale",
+            if self._send("DawgHaus: ESPN sync is stale",
                           f"No good sync for {age_h:.0f}h (last {last_ok:%Y-%m-%d %H:%M} UTC).\n"
                           f"Last error: {err}\nScores/kickoffs on the site may be wrong."):
                 self.state = {"alerted": True, "alerted_at": self.clock().isoformat()}
                 self._save()
         elif not stale and self.state["alerted"]:
-            if self._send("✅ DawgHaus: ESPN sync recovered",
+            if self._send("DawgHaus: ESPN sync recovered",
                           f"Synced {age_h * 60:.0f} min ago. Back to normal.",
                           priority="default", tags="white_check_mark"):
                 self.state = {"alerted": False, "alerted_at": None}
@@ -473,7 +475,7 @@ class Notifier:
     def test(self):
         if not self.url:
             log("NTFY_URL not set; nothing to test"); return False
-        return self._send("🐺 DawgHaus: test notification",
+        return self._send("DawgHaus: test notification",
                           "If you can read this, stale-sync alerts will reach you.",
                           priority="default", tags="dog")
 

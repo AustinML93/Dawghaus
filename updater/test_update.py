@@ -84,6 +84,12 @@ class NotifierTest(unittest.TestCase):
         n.post = lambda url, title, body, **kw: sent.append(title)
         n.check(self.sched(7)); self.assertEqual(len(sent), 1)
 
+    def test_titles_are_header_safe(self):
+        # HTTP headers are latin-1; an emoji title made the first live test fail.
+        n, sent, _ = self.make()
+        n.check(self.sched(7)); n.check(self.sched(0)); n.test()
+        for t in sent: t.encode("latin-1")
+
     def test_disabled_without_url(self):
         n, sent, _ = self.make(); n.url = ""
         n.check(self.sched(48)); self.assertEqual(sent, [])
