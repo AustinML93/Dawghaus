@@ -17,6 +17,10 @@ services:
     image: python:3.12-alpine
     container_name: dawghaus-api
     restart: unless-stopped
+    labels:
+      # WUD (What's Up Docker) on OMV: python:3.12-alpine is a pinned base image,
+      # not an app release — without this WUD flags "3.15-rc-windowsservercore" as an update.
+      - wud.watch=false
     working_dir: /app
     command: ["python", "server.py"]
     environment:
@@ -29,6 +33,10 @@ services:
     image: python:3.12-alpine
     container_name: dawghaus-updater
     restart: unless-stopped
+    labels:
+      # WUD (What's Up Docker) on OMV: python:3.12-alpine is a pinned base image,
+      # not an app release — without this WUD flags "3.15-rc-windowsservercore" as an update.
+      - wud.watch=false
     working_dir: /app
     command: ["python", "update.py"]
     environment:
