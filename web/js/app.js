@@ -204,6 +204,8 @@ function tick() {
     $("snarkLine").textContent = SNARK.flavor();
   }
 
+  renderFreshness(!!hg && (isLive(hg) || daysUntil(parse(hg.kickoff)) === 0));
+
   // Second card: CFB opener countdown pre-season, Record card in-season.
   if (inSeason()) {
     renderRecordCard();
@@ -227,6 +229,21 @@ function tick() {
     if (d > 0) el.innerHTML = d + '<small>days</small>';
     else if (d === 0) el.innerHTML = 'TODAY<small>' + (el.hasAttribute("data-tbd") ? "time TBD" : fmtClock(k)) + '</small>';
   });
+}
+
+// "Updated 2 min ago" on the hero card. Always shown when stale; otherwise only
+// on gameday, when freshness actually matters.
+function renderFreshness(hot) {
+  const el = $("huskyFresh");
+  if (!DATA.updated) { el.hidden = true; return; }
+  const ageMin = (now() - new Date(DATA.updated)) / 60000;
+  const stale = !!DATA.sync_error || ageMin > 24 * 60;
+  if (!stale && !hot) { el.hidden = true; return; }
+  const ago = ageMin < 1 ? "just now" : ageMin < 60 ? `${Math.floor(ageMin)} min ago`
+    : ageMin < 48 * 60 ? `${Math.floor(ageMin / 60)}h ago` : `${Math.floor(ageMin / 1440)} days ago`;
+  el.textContent = stale ? `⚠️ ESPN sync stale — last update ${ago}. Scores/times may be wrong.` : `Updated ${ago}`;
+  el.classList.toggle("stale", stale);
+  el.hidden = false;
 }
 
 function renderRecordCard() {
@@ -347,13 +364,30 @@ function renderOregon() {
 
 const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
+let schedExpanded = false;
 function renderSchedule() {
   const list = $("scheduleList");
   const games = DATA.games || [];
   const next = nextHuskyGame();
   list.innerHTML = "";
 
+  // Fold completed games (except the most recent) so the next game stays near
+  // the top as the season goes. One-tap to unfold; stays unfolded across re-renders.
+  const done = games.filter(g => !g.bye && gameOver(g));
+  const foldable = done.slice(0, -1);
+  if (foldable.length >= 2) {
+    const btn = document.createElement("button");
+    btn.className = "sched-fold"; btn.type = "button";
+    const rec = record();
+    btn.textContent = schedExpanded ? "▾ Hide earlier results" : `▸ ${foldable.length} earlier results folded (${rec.w}-${rec.l}) — tap to unfold`;
+    btn.addEventListener("click", () => { schedExpanded = !schedExpanded; renderSchedule(); });
+    list.appendChild(btn);
+  }
+  const folded = new Set(foldable.length >= 2 && !schedExpanded ? foldable : []);
+  const foldedByes = folded.size ? new Set(games.filter((g, i) => g.bye && games.slice(i + 1).some(x => folded.has(x)))) : new Set();
+
   games.forEach(g => {
+    if (folded.has(g) || foldedByes.has(g)) return;
     if (g.bye) {
       const b = document.createElement("div");
       b.className = "bye-card";
