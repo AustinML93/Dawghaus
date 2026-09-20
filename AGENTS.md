@@ -4,16 +4,14 @@
 ## Current handoff
 _Rewritten in place at every close-out; history lives in git._
 
-- **Last updated:** 2026-09-12 (evening, during the Utah State game)
-- **Landed (all pushed and deployed via `./deploy.sh`):**
-  - `5cbade4` — five Codex review fixes: `/api/` bypasses the SW cache (votes/siren were freezing), LIVE instead of a giant "0" with no score, date-only countdown for TBD kickoffs, honest rank fallback (`current_rank`), "Leading"/"Deadlock" vote lines + save/error feedback.
-  - `2c72313` — freshness stamp on the hero card (stale ⚠️ promoted there), folded earlier results in the slate, BACKLOG.md rewritten.
-  - `41b7d8d` — **live scores from the ESPN summary endpoint**; the schedule feed is `score: null` in-game. Found live during the game.
-  - `3de83c0` + `a218794` — **liveness alert to ntfy** (`omv-alerts`, stale after 6h, once per outage + recovery, `--test-notify`). Titles must be latin-1 (first live test failed on an emoji).
-- **Tests:** `cd updater && python3 -m unittest test_update` — 12 passing (first tests in the repo).
-- **Verified live:** score card showed UW 10–7 Utah State at halftime; test ntfy message landed on the topic; site 200 locally and publicly on shell `?v=11`.
-- **Gotcha noted:** `deploy.sh` stashes the live `data/schedule.json` back to the seed; the updater re-merges within one cycle (2 min in-game). Don't deploy at kickoff.
-- **Next session — pick from (see BACKLOG.md):** "Who's actually coming?" (In/Maybe/Couch + meetup time on the watch card) is next up. Score predictions are **held** (Mike, 2026-09-12). Cope button / crew quotes wait on Mike's lines.
+- **Last updated:** 2026-09-19 (evening, during the Eastern Washington game)
+- **Landed:**
+  - `6a513a9` — **share card live mode** (pushed + deployed, verified on Mike's Pixel mid-game). During a game the card fell through to the countdown layout ("IT'S GAMEDAY" + football, snark line overlapping the opponent line). Now: LIVE badge, lead/trail/tied, big score, quarter + clock; "Send to a buddy" text leads with the score; gameday countdown no longer overlaps. Shell `?v=12`.
+  - `5ce969b` — **reload once on service-worker `controllerchange`** (committed, **NOT pushed or deployed**: Mike said after the game). Installed PWAs on Android kept the old shell after an update until a Force-stop; now the page reloads itself when the new worker claims it. Shell `?v=13` / `dawghaus-v13`.
+- **Tests:** `cd updater && python3 -m unittest test_update` — 12 passing. Share card checked by rendering all three modes in headless Chrome (live / gameday / countdown).
+- **Verified live:** deploy mid-game was fine — the updater re-merged the live score (38–13, Q3) within a minute of `deploy.sh`.
+- **First thing next session:** `git push`, then `./deploy.sh` on OMV, then open the PWA on the Pixel: it should self-reload onto v13 with **one** reopen (no Force-stop). Confirm before writing "shipped".
+- **Next after that (see BACKLOG.md):** "Who's actually coming?" (In/Maybe/Couch + meetup time on the watch card). Score predictions are **held** (Mike, 2026-09-12). Cope button / crew quotes wait on Mike's lines.
 
 A snarky, Husky-themed PWA: countdowns to the first college football game and the first
 UW Husky game, the full 2026 schedule (live-updating), a hype meter, gameday weather, a
@@ -43,8 +41,8 @@ No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
 
 ## ⚠️ Caching — read before debugging "my change isn't live"
 These each cost real time once. In order of how often they bite:
-1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=11`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
-2. **Service worker:** bump `CACHE = "dawghaus-vN"` in `web/sw.js` on every shell change. Clients need a full PWA close/reopen (sometimes twice).
+1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=13`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
+2. **Service worker:** bump `CACHE = "dawghaus-vN"` in `web/sw.js` on every shell change. Since v13 the page reloads itself when the new worker takes over, so one reopen should do; before that, Android PWAs needed a **Force stop** (long-press icon → ⓘ) to drop the old worker.
 3. **`nginx.conf` is a single-file bind mount:** `git pull` swaps the inode, so a plain reload serves OLD config — `deploy.sh` uses `--force-recreate` to fix. Verify: `docker exec dawghaus-web grep -n 'location ~' /etc/nginx/conf.d/default.conf`.
 4. **LAN DNS via AdGuard Home** (`192.168.1.200`): after CF DNS changes it can hold a stale/negative cache for the whole LAN. `docker restart adguardhome` clears it (brief blip). Cellular bypasses it.
 
