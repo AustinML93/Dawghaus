@@ -593,7 +593,16 @@ async function shareCard() {
     const rec = record(); const D = ducks(); const fresh = freshResult(); const hg = nextHuskyGame();
     const duck = DUCKDATA && DUCKDATA.record ? `Oregon: ${DUCKDATA.record.w}-${DUCKDATA.record.l}` : null;
     let st;
-    if (fresh) {
+    const sc = hg && isLive(hg) ? liveScore(hg) : null;
+    if (sc) {
+      // In-game: share the score, not the countdown (bit us live 2026-09-19).
+      const up = hg.live.us > hg.live.them, tied = hg.live.us === hg.live.them;
+      st = { mode: "live", us: hg.live.us, them: hg.live.them, clock: sc.clock, opponent: hg.opponent, home: hg.home,
+             line: up ? "THE DAWGS ARE WINNING RIGHT NOW. Why are you reading this?"
+                 : tied ? "Deadlocked. Somebody bark louder."
+                 : "It's fine. We're fine. Everything is fine. (Trailing. Keep barking.)",
+             text: `LIVE: UW ${hg.live.us}–${hg.live.them} ${hg.abbr || hg.opponent}${sc.clock ? " · " + sc.clock : ""} 🐺🔴` };
+    } else if (fresh) {
       const won = fresh.result[0] === "W";
       st = { mode: "result", won, score: fresh.result.slice(2), opponent: fresh.opponent, home: fresh.home,
              line: D ? (won ? D.gloat(fresh) : D.cope(fresh)) : "", text: `${won ? "DAWGS WIN" : "Dawgs lost"} ${fresh.result.slice(2)} ${fresh.home ? "vs" : "@"} ${fresh.opponent} 🐺` };
@@ -624,7 +633,9 @@ function wireButtons() {
     const text = fresh && D
       ? `${fresh.result[0] === "W" ? "DAWGS WIN" : "Dawgs lost"} ${fresh.result.slice(2)} ${fresh.home ? "vs" : "@"} ${fresh.opponent}. ${fresh.result[0] === "W" ? D.gloat(fresh) : D.cope(fresh)} 🐺`
       : hg && isLive(hg)
-      ? `Dawgs are LIVE right now ${hg.home ? "vs" : "@"} ${hg.opponent} 🐺🔴 Get in here:`
+      ? (liveScore(hg)
+          ? `LIVE: UW ${hg.live.us}–${hg.live.them} ${hg.abbr || hg.opponent}${liveScore(hg).clock ? " · " + liveScore(hg).clock : ""} 🐺🔴 Get in here:`
+          : `Dawgs are LIVE right now ${hg.home ? "vs" : "@"} ${hg.opponent} 🐺🔴 Get in here:`)
       : d != null && rec.played
       ? `Huskies are ${rec.w}-${rec.l}. ${d} days until we ${hg.home ? "host" : "visit"} ${hg.opponent} 🐺 (still the last Pac-12 champs):`
       : d != null

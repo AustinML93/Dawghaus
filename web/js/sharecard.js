@@ -1,5 +1,6 @@
 /* DawgHaus share card — renders a 1080x1080 PNG on a canvas for the group chat.
- * Modes: "result" (last score + gloat/cope line) or "countdown" (days to next game).
+ * Modes: "live" (in-progress score + clock), "result" (final score + gloat/cope line)
+ * or "countdown" (days to next game).
  * No deps. Emoji render via the system font. */
 
 const SHARECARD = (() => {
@@ -40,7 +41,16 @@ const SHARECARD = (() => {
     ctx.fillStyle = GOLD; ctx.font = `700 30px ${sys}`;
     ctx.fillText((s.rank ? `#${s.rank} ` : "") + "WASHINGTON HUSKIES" + (s.record ? `  ·  ${s.record}` : ""), W / 2, 195);
 
-    if (s.mode === "result") {
+    if (s.mode === "live") {
+      // In-game: the score IS the card. Big numbers, who's up, what quarter.
+      const lead = s.us > s.them ? "DAWGS LEAD" : s.us < s.them ? "DAWGS TRAIL" : "ALL TIED UP";
+      ctx.fillStyle = s.us > s.them ? WIN : s.us < s.them ? LOSS : GOLDB; ctx.font = `900 72px ${sys}`;
+      ctx.fillText(`🔴 LIVE · ${lead}`, W / 2, 330);
+      ctx.fillStyle = "#fff"; ctx.font = `900 200px ${sys}`;
+      ctx.fillText(`${s.us}–${s.them}`, W / 2, 500);
+      ctx.fillStyle = GOLDB; ctx.font = `700 46px ${sys}`;
+      ctx.fillText(`${s.home ? "vs" : "@"} ${s.opponent}${s.clock ? " · " + s.clock : ""}${s.home ? " · Husky Stadium" : ""}`, W / 2, 630);
+    } else if (s.mode === "result") {
       const won = s.won;
       ctx.fillStyle = won ? WIN : LOSS; ctx.font = `900 72px ${sys}`;
       ctx.fillText(won ? "DAWGS WIN" : "DAWGS FALL", W / 2, 330);
@@ -51,20 +61,21 @@ const SHARECARD = (() => {
     } else {
       ctx.fillStyle = GOLDB; ctx.font = `700 52px ${sys}`;
       ctx.fillText(s.days === 0 ? "IT'S GAMEDAY" : "DAWGS ARE BACK IN", W / 2, 320);
-      ctx.fillStyle = "#fff"; ctx.font = `900 300px ${sys}`;
-      ctx.fillText(s.days === 0 ? "🏈" : String(s.days), W / 2, 500);
+      ctx.fillStyle = "#fff"; ctx.font = `900 ${s.days === 0 ? 220 : 300}px ${sys}`;
+      ctx.fillText(s.days === 0 ? "🏈" : String(s.days), W / 2, 490);
       ctx.fillStyle = GOLD; ctx.font = `700 44px ${sys}`;
-      ctx.fillText(s.days === 1 ? "DAY" : (s.days === 0 ? "" : "DAYS"), W / 2, 660);
+      ctx.fillText(s.days === 1 ? "DAY" : (s.days === 0 ? "" : "DAYS"), W / 2, 650);
       ctx.fillStyle = GOLDB; ctx.font = `700 46px ${sys}`;
-      ctx.fillText(`${s.home ? "vs" : "@"} ${s.opponent}${s.when ? " · " + s.when : ""}`, W / 2, 725);
+      ctx.fillText(`${s.home ? "vs" : "@"} ${s.opponent}${s.when ? " · " + s.when : ""}`, W / 2, 710);
     }
 
-    // snark line
+    // snark line: starts below the opponent line (710 + half a line) and grows downward,
+    // capped at 3 lines so it never runs into the footer banner at H-150.
     if (s.line) {
       ctx.fillStyle = "#fff";
-      const lines = wrap(ctx, s.line, W - 200, `italic 600 40px ${sys}`);
-      let y = 800 - (lines.length - 1) * 26;
-      for (const ln of lines.slice(0, 3)) { ctx.fillText(ln, W / 2, y); y += 52; }
+      const lines = wrap(ctx, s.line, W - 200, `italic 600 40px ${sys}`).slice(0, 3);
+      let y = 775;
+      for (const ln of lines) { ctx.fillText(ln, W / 2, y); y += 50; }
     }
 
     // footer banner
