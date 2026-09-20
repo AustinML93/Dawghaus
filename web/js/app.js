@@ -713,6 +713,16 @@ wireButtons();
 loadData();
 
 if ("serviceWorker" in navigator) {
+  // When a new worker takes over (sw.js does skipWaiting + clients.claim), reload once so the
+  // page that noticed the update actually runs it. Without this, installed PWAs (Android
+  // especially) showed the old shell until a force-stop. Skip the very first install: there
+  // is no previous controller, so nothing stale is on screen.
+  let hadController = !!navigator.serviceWorker.controller, reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) { hadController = true; return; }
+    if (reloaded) return; reloaded = true;
+    location.reload();
+  });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(e => console.warn("SW failed", e));
   });
