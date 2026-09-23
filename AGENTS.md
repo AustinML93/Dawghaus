@@ -29,7 +29,7 @@ Working name **DawgHaus**; public-name idea is *Purple Reign*.
 No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
 - `web/` — the PWA: `index.html`, `css/styles.css`, `js/{app,snark,trashtalk,fightsong,touchdown}.js`, `sw.js`, `manifest.webmanifest`, `icons/`, `audio/`.
 - `data/schedule.json` — hand-seeded 2026 schedule; the updater merges live data onto it.
-- `updater/update.py` — stdlib-only; pulls ESPN (team **264**) for kickoff/TV/scores and Open-Meteo for home-game weather. No API keys. Runs on a loop (`UPDATE_INTERVAL`, default 6h; drop to 1800 once the season's near).
+- `updater/update.py` — stdlib-only; pulls ESPN (team **264**) for kickoff/TV/scores and Open-Meteo for home-game weather. No API keys. Runs on a loop (`UPDATE_INTERVAL`, default 1800 s; see ESPN gotchas for the live-game interval).
 - `api/server.py` — stdlib HTTP server, the ONLY stateful piece: shared siren tap counter at `/api/siren` (GET/POST, `data/siren.json`) and where-we-watching votes at `/api/watch` (GET `?game=`, POST `{game,voter,spot}`, `data/watch.json`, one vote per voter id per game). Light per-IP rate limit. Spot names are user text: render with textContent only. nginx proxies `/api/` → `api:8080` (lazy Docker-DNS resolve so nginx boots even if api is slow).
 - `docker-compose.yml` (web=nginx, api=python, updater=python), `nginx.conf`, `deploy.sh`, `BACKLOG.md`.
 
