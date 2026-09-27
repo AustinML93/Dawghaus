@@ -4,14 +4,15 @@
 ## Current handoff
 _Rewritten in place at every close-out; history lives in git._
 
-- **Last updated:** 2026-09-19 (evening, during the Eastern Washington game)
-- **Landed:**
-  - `6a513a9` — **share card live mode** (pushed + deployed, verified on Mike's Pixel mid-game). During a game the card fell through to the countdown layout ("IT'S GAMEDAY" + football, snark line overlapping the opponent line). Now: LIVE badge, lead/trail/tied, big score, quarter + clock; "Send to a buddy" text leads with the score; gameday countdown no longer overlaps. Shell `?v=12`.
-  - `5ce969b` — **reload once on service-worker `controllerchange`** (committed, **NOT pushed or deployed**: Mike said after the game). Installed PWAs on Android kept the old shell after an update until a Force-stop; now the page reloads itself when the new worker claims it. Shell `?v=13` / `dawghaus-v13`.
-- **Tests:** `cd updater && python3 -m unittest test_update` — 12 passing. Share card checked by rendering all three modes in headless Chrome (live / gameday / countdown).
-- **Verified live:** deploy mid-game was fine — the updater re-merged the live score (38–13, Q3) within a minute of `deploy.sh`.
-- **First thing next session:** `git push`, then `./deploy.sh` on OMV, then open the PWA on the Pixel: it should self-reload onto v13 with **one** reopen (no Force-stop). Confirm before writing "shipped".
-- **Next after that (see BACKLOG.md):** "Who's actually coming?" (In/Maybe/Couch + meetup time on the watch card). Score predictions are **held** (Mike, 2026-09-12). Cope button / crew quotes wait on Mike's lines.
+- **Last updated:** 2026-09-27 (day after the Minnesota loss, 24–27)
+- **Landed (all pushed + deployed to OMV, which is at `73b18d9`):**
+  - `73b18d9` — **post-game snark line held still.** After a loss the hero line reshuffled every second: `cope`/`gloat`/`duckLoss`/`duckUndefeated` in `web/js/ducks.js` called `rand()` on every call and `tick()` renders every second. They now pick once per page load per game (`hold()`); `trash()` still rerolls per tap. Shell `?v=14` / `dawghaus-v14`.
+  - `cc556ff` — `wud.watch=false` on `web` (api/updater already had it). WUD's update list on OMV is empty; no dawghaus containers tracked.
+  - `eb01b0d` — docs: deploy over `ssh omv`; bare `ssh deploy@192.168.1.200` is refused (publickey).
+  - `5ce969b` (from 09-19) — SW `controllerchange` self-reload is now deployed.
+- **Tests:** no updater changes; `cd updater && python3 -m unittest test_update` last ran 12 passing (09-19). The snark fix was checked in node (50 calls → 1 distinct line each; trash → 26 distinct).
+- **Verified live:** desktop Chrome self-reloaded v13 → v14 with no manual step and the snark line held for 12 s; **Mike confirmed on the Pixel** (v14, line holds). The self-reload is shipped.
+- **Next session — pick from:** "Who's actually coming?" (In/Maybe/Couch + meetup time on the watch card; see BACKLOG.md). Score predictions are **held** (Mike, 2026-09-12). Cope button / crew quotes wait on Mike's lines.
 
 A snarky, Husky-themed PWA: countdowns to the first college football game and the first
 UW Husky game, the full 2026 schedule (live-updating), a hype meter, gameday weather, a

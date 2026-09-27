@@ -27,6 +27,10 @@ features that live in the during-game or post-game moment. No logins, minimal st
   only if we add more sounds.
 
 ## Shipped (so nobody re-proposes it)
+- 2026-09-27: post-game gloat/cope lines hold still per page load (were rerolling every
+  second); `web` container excluded from WUD.
+- 2026-09-19: share card live mode (score, quarter, clock); PWA self-reloads onto a new
+  service worker (no more Force-stop on Android).
 - 2026-09-12 (evening): live scores via the ESPN summary endpoint (schedule feed is null
   in-game); **liveness alert** to ntfy `omv-alerts` when the sync is stale >6h, plus recovery.
 - 2026-09-12: Codex review fixes (API bypasses the SW cache, LIVE instead of "0", date-only

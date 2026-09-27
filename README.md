@@ -47,10 +47,10 @@ Then open `http://<server>:1889`.
 ## Deploy to OMV (standard pattern)
 
 Cloned at `/srv/dev-disk-by-uuid-5c291e74-2a76-4eb0-924b-7bf8f9eca72c/compose/dawghaus`
-on the OMV box (`deploy@192.168.1.200`). To ship updates:
+on the OMV box (`deploy@192.168.1.200`, reached via the `ssh omv` alias). To ship updates:
 
 ```bash
-ssh deploy@192.168.1.200
+ssh omv
 cd /srv/dev-disk-by-uuid-.../compose/dawghaus
 ./deploy.sh        # stashes local data changes, git pull, pull images, recreate
 ```
