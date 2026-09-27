@@ -3,6 +3,9 @@ services:
     image: nginx:alpine
     container_name: dawghaus-web
     restart: unless-stopped
+    labels:
+      # WUD (What's Up Docker) on OMV: nginx:alpine is a stock base image, not an app release.
+      - wud.watch=false
     ports:
       - "1889:80"            # 1889 = UW's first-ever football game. Point the CF tunnel here.
     volumes:
