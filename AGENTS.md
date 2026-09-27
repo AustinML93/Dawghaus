@@ -35,7 +35,7 @@ No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
 
 ## Deploy
 - GitHub: **https://github.com/AustinML93/Dawghaus** (public). `gh` is authed as AustinML93; commits authored as Mike Larsen. End commit messages with `Co-Authored-By: <the model that did the work> <noreply@anthropic.com> (the harness supplies the exact trailer)`.
-- OMV: `deploy@192.168.1.200`, cloned at `/srv/dev-disk-by-uuid-5c291e74-2a76-4eb0-924b-7bf8f9eca72c/compose/dawghaus`.
+- OMV: `ssh omv` (deploy@192.168.1.200 with the homelab key; a bare `ssh deploy@192.168.1.200` is refused), cloned at `/srv/dev-disk-by-uuid-5c291e74-2a76-4eb0-924b-7bf8f9eca72c/compose/dawghaus`.
 - Ship: commit + push, then on the box `./deploy.sh` (stash → pull → pull images → **up -d --force-recreate**).
 - **Port 1889** (UW's first-ever game). Cloudflare tunnel (dashboard-managed) routes `dawghaus.austinmlapps.com` → `http://localhost:1889`. Mike owns tunnel/DNS changes.
 
