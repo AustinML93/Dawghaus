@@ -41,7 +41,7 @@ No build step. Vanilla HTML/CSS/JS PWA + two stock-image Docker containers.
 
 ## ⚠️ Caching — read before debugging "my change isn't live"
 These each cost real time once. In order of how often they bite:
-1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=13`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
+1. **Cloudflare 4h edge cache** (proxied; default Browser Cache TTL = `max-age=14400` overrides origin headers). On any change to a shell asset, **bump the `?v=N` query** in BOTH `web/index.html` and the `sw.js` SHELL list (currently `?v=14`). `index.html` is `DYNAMIC` (not edge-cached) so new refs are seen immediately. nginx also sends `Cache-Control: no-cache` on js/css/mp3/html/sw/manifest so CF revalidates.
 2. **Service worker:** bump `CACHE = "dawghaus-vN"` in `web/sw.js` on every shell change. Since v13 the page reloads itself when the new worker takes over, so one reopen should do; before that, Android PWAs needed a **Force stop** (long-press icon → ⓘ) to drop the old worker.
 3. **`nginx.conf` is a single-file bind mount:** `git pull` swaps the inode, so a plain reload serves OLD config — `deploy.sh` uses `--force-recreate` to fix. Verify: `docker exec dawghaus-web grep -n 'location ~' /etc/nginx/conf.d/default.conf`.
 4. **LAN DNS via AdGuard Home** (`192.168.1.200`): after CF DNS changes it can hold a stale/negative cache for the whole LAN. `docker restart adguardhome` clears it (brief blip). Cellular bypasses it.

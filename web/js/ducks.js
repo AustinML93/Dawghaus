@@ -21,6 +21,13 @@ const DUCKS = (() => {
     if (!arr || !arr.length) return "";
     return arr[Math.floor(Math.random() * arr.length)];
   }
+  // Random once per page load, then held: tick() re-renders every second, so a
+  // bare rand() in a rendered line reshuffles it every second.
+  const held = new Map();
+  function hold(key, arr) {
+    if (!held.has(key)) held.set(key, rand(arr));
+    return held.get(key);
+  }
 
   // "W 31-24" -> "31-24"; anything unparseable comes back as-is.
   function scoreOf(result) {
@@ -145,7 +152,7 @@ const DUCKS = (() => {
     let pool = GLOAT_GENERIC;
     if (game.rivalry === "oregon") pool = GLOAT_OREGON;
     else if (game.rivalry === "apple-cup") pool = GLOAT_APPLE_CUP;
-    return fill(rand(pool), opp, score);
+    return fill(hold("gloat|" + opp + "|" + score, pool), opp, score);
   }
 
   // ---------------------------------------------------------------------
@@ -196,7 +203,7 @@ const DUCKS = (() => {
     let pool = COPE_GENERIC;
     if (game.rivalry === "oregon") pool = COPE_OREGON;
     else if (game.rivalry === "apple-cup") pool = COPE_APPLE_CUP;
-    return fill(rand(pool), opp, score);
+    return fill(hold("cope|" + opp + "|" + score, pool), opp, score);
   }
 
   // ---------------------------------------------------------------------
@@ -283,10 +290,10 @@ const DUCKS = (() => {
   function duckLoss(loss) {
     loss = loss || {};
     const opp = loss.opponent || "somebody";
-    return fill(rand(DUCK_LOSS), opp, scoreOf(loss.score));
+    return fill(hold("duckLoss|" + opp + "|" + loss.score, DUCK_LOSS), opp, scoreOf(loss.score));
   }
   function duckUndefeated() {
-    return rand(DUCK_UNDEFEATED);
+    return hold("duckUndefeated", DUCK_UNDEFEATED);
   }
 
   // ---------------------------------------------------------------------
